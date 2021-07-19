@@ -21,7 +21,7 @@ fn main() {
         {
             0x00 => println!("NOP"),
             0x01 => {
-                    println!("LXI B,${:x}{:x}", buf[cursor + 1], buf[cursor + 2]);
+                    println!("LXI B,${:x}{:x}", buf[cursor + 2], buf[cursor + 1]);
 		            cursor += 2;
 		            },
             0x02 => println!("STAX B"),
