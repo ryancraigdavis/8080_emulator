@@ -3,20 +3,18 @@ use std::io::prelude::*;
 
 fn main() {
     
-    println!("start");
-
-    let file_name = String::from("invaders.h");
+    println!("start disassembly");
+    let file_name = String::from("invaders");
 
     let mut buf = Vec::new();
-
     let mut file_in = fs::File::open(file_name).unwrap();
-
     file_in.read_to_end(&mut buf).unwrap();
 
     let mut cursor = 0;
 
     while cursor < buf.len()
     {
+        print!("{:04x} ", cursor);
         match buf[cursor]
         {
             0x00 => println!("NOP"),
