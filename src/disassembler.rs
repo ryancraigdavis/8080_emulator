@@ -1,125 +1,121 @@
-pub fn print_all(buf: & Vec<u8>)
-{
+pub fn print_all(buf: &Vec<u8>) {
+    println!("start disassembly");
+    let mut cursor = 0;
 
-	println!("start disassembly");
-	let mut cursor = 0;
-
-	while cursor < buf.len()
-    {
+    while cursor < buf.len() {
         print!("{:04x} ", cursor);
-        match buf[cursor]
-        {
+        match buf[cursor] {
             0x00 => println!("NOP"),
             0x01 => {
-                    println!("LXI B,${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-		            cursor += 2;
-		            },
+                println!("LXI B,${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
+                cursor += 2;
+            }
             0x02 => println!("STAX B"),
             0x03 => println!("INX B"),
             0x04 => println!("INR B"),
             0x05 => println!("DCR B"),
             0x06 => {
-                    println!("MVI B,${:02x}", buf[cursor + 1]);
-		            cursor += 1;
-		            },
+                println!("MVI B,${:02x}", buf[cursor + 1]);
+                cursor += 1;
+            }
             0x07 => println!("RLC"),
-            0x08 => println!("-"),	
+            0x08 => println!("-"),
             0x09 => println!("DAD B"),
             0x0a => println!("LDAX B"),
             0x0b => println!("DCX B"),
             0x0c => println!("INR C"),
             0x0d => println!("DCR C"),
             0x0e => {
-                    println!("MVI C,${:02x}", buf[cursor + 1]);
-		            cursor += 1;
-		            },
+                println!("MVI C,${:02x}", buf[cursor + 1]);
+                cursor += 1;
+            }
             0x0f => println!("RRC"),
-            0x10 => println!("-"),	
+            0x10 => println!("-"),
             0x11 => {
-                    println!("LXI D,${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
+                println!("LXI D,${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
+                cursor += 2;
+            }
             0x12 => println!("STAX D"),
             0x13 => println!("INX D"),
             0x14 => println!("INR D"),
             0x15 => println!("DCR D"),
             0x16 => {
-                    println!("MVI D,${:02x}", buf[cursor + 1]);
-            		cursor += 1;
-            		},
+                println!("MVI D,${:02x}", buf[cursor + 1]);
+                cursor += 1;
+            }
             0x17 => println!("RAL"),
-            0x18 => println!("-"),	
+            0x18 => println!("-"),
             0x19 => println!("DAD D"),
             0x1a => println!("LDAX D"),
             0x1b => println!("DCX D"),
             0x1c => println!("INR E"),
             0x1d => println!("DCR E"),
             0x1e => {
-                    println!("MVI E,${:02x}", buf[cursor + 1]);
-            		cursor += 1;
-            		},
+                println!("MVI E,${:02x}", buf[cursor + 1]);
+                cursor += 1;
+            }
             0x1f => println!("RAR"),
-            0x20 => println!("-"),	
+            0x20 => println!("-"),
             0x21 => {
-                    println!("LXI H,${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
+                println!("LXI H,${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
+                cursor += 2;
+            }
             0x22 => {
-                    println!("SHLD ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
+                println!("SHLD ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
+                cursor += 2;
+            }
             0x23 => println!("INX H"),
             0x24 => println!("INR H"),
             0x25 => println!("DCR H"),
             0x26 => {
-                    println!("MVI H,${:02x}", buf[cursor + 1]);
-            		cursor += 1;
-            		},
+                println!("MVI H,${:02x}", buf[cursor + 1]);
+                cursor += 1;
+            }
             0x27 => println!("DAA"),
-            0x28 => println!("-"),	
+            0x28 => println!("-"),
             0x29 => println!("DAD H"),
             0x2a => {
-                    println!("LHLD ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
+                println!("LHLD ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
+                cursor += 2;
+            }
             0x2b => println!("DCX H"),
             0x2c => println!("INR L"),
             0x2d => println!("DCR L"),
             0x2e => {
-                    println!("MVI L,${:02x}", buf[cursor + 1]);
-            		cursor += 1;
-            		},
+                println!("MVI L,${:02x}", buf[cursor + 1]);
+                cursor += 1;
+            }
             0x2f => println!("CMA"),
-            0x30 => println!("-"),	
+            0x30 => println!("-"),
             0x31 => {
-                    println!("LXI SP,${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
+                println!("LXI SP,${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
+                cursor += 2;
+            }
             0x32 => {
-                    println!("STA ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
+                println!("STA ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
+                cursor += 2;
+            }
             0x33 => println!("INX SP"),
             0x34 => println!("INR M"),
             0x35 => println!("DCR M"),
             0x36 => {
-                    println!("MVI M,${:02x}", buf[cursor + 1]);
-            		cursor += 1;
-            		},
+                println!("MVI M,${:02x}", buf[cursor + 1]);
+                cursor += 1;
+            }
             0x37 => println!("STC"),
-            0x38 => println!("-"),	
+            0x38 => println!("-"),
             0x39 => println!("DAD SP"),
             0x3a => {
-                    println!("LDA ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
+                println!("LDA ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
+                cursor += 2;
+            }
             0x3b => println!("DCX SP"),
             0x3c => println!("INR A"),
             0x3d => println!("DCR A"),
             0x3e => {
-                    println!("MVI A,${:02x}", buf[cursor + 1]);
-            		cursor += 1;
-            		},
+                println!("MVI A,${:02x}", buf[cursor + 1]);
+                cursor += 1;
+            }
             0x3f => println!("CMC"),
             0x40 => println!("MOV B,B"),
             0x41 => println!("MOV B,C"),
@@ -252,163 +248,158 @@ pub fn print_all(buf: & Vec<u8>)
             0xc0 => println!("RNZ"),
             0xc1 => println!("POP B"),
             0xc2 => {
-                    println!("JNZ ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
+                println!("JNZ ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
+                cursor += 2;
+            }
             0xc3 => {
-                    println!("JMP ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
+                println!("JMP ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
+                cursor += 2;
+            }
             0xc4 => {
-                    println!("CNZ ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
+                println!("CNZ ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
+                cursor += 2;
+            }
             0xc5 => println!("PUSH B"),
             0xc6 => {
-                    println!("ADI {:02x}", buf[cursor + 1]);
-            		cursor += 1;
-            		},
+                println!("ADI {:02x}", buf[cursor + 1]);
+                cursor += 1;
+            }
             0xc7 => println!("RST 0"),
             0xc8 => println!("RZ"),
             0xc9 => println!("RET"),
             0xca => {
-                    println!("JZ ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
-            0xcb => println!("-"),	
+                println!("JZ ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
+                cursor += 2;
+            }
+            0xcb => println!("-"),
             0xcc => {
-                    println!("CZ ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
+                println!("CZ ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
+                cursor += 2;
+            }
             0xcd => {
-                    println!("CALL ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
+                println!("CALL ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
+                cursor += 2;
+            }
             0xce => {
-                    println!("ACI {:02x}", buf[cursor + 1]);
-            		cursor += 1;
-            		},
+                println!("ACI {:02x}", buf[cursor + 1]);
+                cursor += 1;
+            }
             0xcf => println!("RST 1"),
             0xd0 => println!("RNC"),
             0xd1 => println!("POP D"),
             0xd2 => {
-                    println!("JNC ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
+                println!("JNC ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
+                cursor += 2;
+            }
             0xd3 => {
-                    println!("OUT {:02x}", buf[cursor + 1]);
-            		cursor += 1;
-            		},
+                println!("OUT {:02x}", buf[cursor + 1]);
+                cursor += 1;
+            }
             0xd4 => {
-                    println!("CNC ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
+                println!("CNC ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
+                cursor += 2;
+            }
             0xd5 => println!("PUSH D"),
             0xd6 => {
-                    println!("SUI {:02x}", buf[cursor + 1]);
-            		cursor += 1;
-            		},
+                println!("SUI {:02x}", buf[cursor + 1]);
+                cursor += 1;
+            }
             0xd7 => println!("RST 2"),
             0xd8 => println!("RC"),
-            0xd9 => println!("-"),	
+            0xd9 => println!("-"),
             0xda => {
-                    println!("JC ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
+                println!("JC ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
+                cursor += 2;
+            }
             0xdb => {
-                    println!("IN {:02x}", buf[cursor + 1]);
-            		cursor += 1;
-            		},
+                println!("IN {:02x}", buf[cursor + 1]);
+                cursor += 1;
+            }
             0xdc => {
-                    println!("CC ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
-            0xdd => println!("-"),	
+                println!("CC ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
+                cursor += 2;
+            }
+            0xdd => println!("-"),
             0xde => {
-                    println!("SBI {:02x}", buf[cursor + 1]);
-            		cursor += 1;
-            		},
+                println!("SBI {:02x}", buf[cursor + 1]);
+                cursor += 1;
+            }
             0xdf => println!("RST 3"),
             0xe0 => println!("RPO"),
             0xe1 => println!("POP H"),
             0xe2 => {
-                    println!("JPO ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
+                println!("JPO ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
+                cursor += 2;
+            }
             0xe3 => println!("XTHL"),
             0xe4 => {
-                    println!("CPO ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
+                println!("CPO ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
+                cursor += 2;
+            }
             0xe5 => println!("PUSH H"),
             0xe6 => {
-                    println!("ANI {:02x}", buf[cursor + 1]);
-            		cursor += 1;
-            		},
+                println!("ANI {:02x}", buf[cursor + 1]);
+                cursor += 1;
+            }
             0xe7 => println!("RST 4"),
             0xe8 => println!("RPE"),
             0xe9 => println!("PCHL"),
             0xea => {
-                    println!("JPE ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
+                println!("JPE ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
+                cursor += 2;
+            }
             0xeb => println!("XCHG"),
             0xec => {
-                    println!("CPE ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
-            0xed => println!("-"),	
+                println!("CPE ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
+                cursor += 2;
+            }
+            0xed => println!("-"),
             0xee => {
-                    println!("XRI {:02x}", buf[cursor + 1]);
-            		cursor += 1;
-            		},
+                println!("XRI {:02x}", buf[cursor + 1]);
+                cursor += 1;
+            }
             0xef => println!("RST 5"),
             0xf0 => println!("RP"),
             0xf1 => println!("POP PSW"),
             0xf2 => {
-                    println!("JP ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
+                println!("JP ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
+                cursor += 2;
+            }
             0xf3 => println!("DI"),
             0xf4 => {
-                    println!("CP ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
+                println!("CP ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
+                cursor += 2;
+            }
             0xf5 => println!("PUSH PSW"),
             0xf6 => {
-                    println!("ORI {:02x}", buf[cursor + 1]);
-            		cursor += 1;
-            		},
+                println!("ORI {:02x}", buf[cursor + 1]);
+                cursor += 1;
+            }
             0xf7 => println!("RST 6"),
             0xf8 => println!("RM"),
             0xf9 => println!("SPHL"),
             0xfa => {
-                    println!("JM ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
+                println!("JM ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
+                cursor += 2;
+            }
             0xfb => println!("EI"),
             0xfc => {
-                    println!("CM ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
-            0xfd => println!("-"),	
+                println!("CM ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
+                cursor += 2;
+            }
+            0xfd => println!("-"),
             0xfe => {
-                    println!("CPI {:02x}", buf[cursor + 1]);
-            		cursor += 1;
-            		},
+                println!("CPI {:02x}", buf[cursor + 1]);
+                cursor += 1;
+            }
             0xff => {
-                    println!("RST {:02x}", buf[cursor + 1]);
-                    cursor += 1;
-                    } 
-                }
-            
-            cursor += 1;
-            
-            
+                println!("RST {:02x}", buf[cursor + 1]);
+                cursor += 1;
+            }
         }
+
+        cursor += 1;
+    }
 
     println!("---------------------------------------");
 }
-
-
-
