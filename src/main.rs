@@ -41,6 +41,55 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                 state.b = buf[cursor + 1];
                 state.pc += 2;
             }
+            // INR B
+            0x04 => {
+                let result: u16 = (state.b as u16) + 1;
+                state.condition.set_inr_flags(result);
+                state.b = (result as u8) & 0xff;
+            }
+            // INR C
+            0x0c => {
+                let result: u16 = (state.c as u16) + 1;
+                state.condition.set_inr_flags(result);
+                state.c = (result as u8) & 0xff;
+            }
+            // INR D
+            0x14 => {
+                let result: u16 = (state.d as u16) + 1;
+                state.condition.set_inr_flags(result);
+                state.d = (result as u8) & 0xff;
+            }
+            // INR E
+            0x1c => {
+                let result: u16 = (state.e as u16) + 1;
+                state.condition.set_inr_flags(result);
+                state.e = (result as u8) & 0xff;
+            }
+            // INR H
+            0x24 => {
+                let result: u16 = (state.h as u16) + 1;
+                state.condition.set_inr_flags(result);
+                state.h = (result as u8) & 0xff;
+            }
+            // INR L
+            0x2c => {
+                let result: u16 = (state.l as u16) + 1;
+                state.condition.set_inr_flags(result);
+                state.l = (result as u8) & 0xff;
+            }
+            // INR Mem
+            0x34 => {
+                let mem_offset: u16 = ((state.h as u16) << 8) | (state.l as u16);
+                //let result: u16 = (state.memory[mem_offset as usize] as u16) + 1;
+                //state.condition.set_inr_flags(result);
+                //state.memory[mem_offset as usize] = (result as u8) & 0xff;
+            }
+            // INR A
+            0x3c => {
+                let result: u16 = (state.a as u16) + 1;
+                state.condition.set_inr_flags(result);
+                state.a = (result as u8) & 0xff;
+            }
             // MOV B,C
             0x41 => {
                 state.b = state.c;
@@ -190,9 +239,27 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                 state.condition.set_add_flags(result);
                 state.a = (result as u8) & 0xff;
             }
+            // SUB A
+            0x97 => {
+                // Subtracts A from A, equaling zero
+                let result: u16 = 0;
+                state.condition.set_sub_flags(result);
+                state.condition.cy = true;
+                state.a = (result as u8) & 0xff;
+            }
             // ADI byte
             0xc6 => {
                 let result: u16 = (state.a as u16) + (buf[cursor + 1] as u16);
+
+                state.condition.set_add_flags(result);
+
+                state.a = (result as u8) & 0xff;
+                state.pc += 1;
+            }
+            // ACI byte
+            0xce => {
+                let result: u16 =
+                    (state.a as u16) + (buf[cursor + 1] as u16) + (state.condition.cy as u16);
 
                 state.condition.set_add_flags(result);
 

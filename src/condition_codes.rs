@@ -18,6 +18,20 @@ impl ConditionCodes {
         self.set_parity_flag(lower);
     }
 
+    pub fn set_inr_flags(&mut self, val: u16) {
+        self.set_zero_flag(val);
+        self.set_sign_flag(val);
+        let lower = val as u8;
+        self.set_parity_flag(lower);
+    }
+
+    pub fn set_sub_flags(&mut self, val: u16) {
+        self.set_zero_flag(val);
+        self.set_sign_flag(val);
+        let lower = val as u8;
+        self.set_parity_flag(lower);
+    }
+
     pub fn set_zero_flag(&mut self, val: u16) {
         if val & 0xff == 0 {
             self.z = true;
