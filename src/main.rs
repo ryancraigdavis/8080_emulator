@@ -80,14 +80,14 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
             0x0f => {
                 let x: u8 = state.a;
                 state.a = ((x & 1) << 7) | (x >> 1);
-                state.condition.cy = 1 == (x&1);
+                state.condition.cy = 1 == (x & 1);
             }
             // RAR
             0x1f => {
                 let x: u8 = state.a;
                 let y: u8 = state.condition.cy as u8;
                 state.a = (y << 7) | (x >> 1);
-                state.condition.cy = 1 == (x&1);
+                state.condition.cy = 1 == (x & 1);
             }
             // ADD B
             0x80 => {
@@ -152,9 +152,74 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
             // ADD A
             0x87 => {
                 let result: u16 = (state.a as u16) + (state.a as u16);
-        
+
                 state.condition.set_add_flags(result);
-        
+
+                state.a = (result as u8) & 0xff;
+            }
+            // ADC B
+            0x88 => {
+                let result: u16 = (state.a as u16) + (state.b as u16) + (state.condition.cy as u16);
+
+                state.condition.set_add_flags(result);
+
+                state.a = (result as u8) & 0xff;
+            }
+            // ADC C
+            0x89 => {
+                let result: u16 = (state.a as u16) + (state.c as u16) + (state.condition.cy as u16);
+
+                state.condition.set_add_flags(result);
+
+                state.a = (result as u8) & 0xff;
+            }
+            // ADC D
+            0x8a => {
+                let result: u16 = (state.a as u16) + (state.d as u16) + (state.condition.cy as u16);
+
+                state.condition.set_add_flags(result);
+
+                state.a = (result as u8) & 0xff;
+            }
+            // ADC E
+            0x8b => {
+                let result: u16 = (state.a as u16) + (state.e as u16) + (state.condition.cy as u16);
+
+                state.condition.set_add_flags(result);
+
+                state.a = (result as u8) & 0xff;
+            }
+            // ADC H
+            0x8c => {
+                let result: u16 = (state.a as u16) + (state.h as u16) + (state.condition.cy as u16);
+
+                state.condition.set_add_flags(result);
+
+                state.a = (result as u8) & 0xff;
+            }
+            // ADC L
+            0x8d => {
+                let result: u16 = (state.a as u16) + (state.l as u16) + (state.condition.cy as u16);
+
+                state.condition.set_add_flags(result);
+
+                state.a = (result as u8) & 0xff;
+            }
+            // ADC Mem
+            0x8e => {
+                let mem_offset: u16 = ((state.h as u16) << 8) | (state.l as u16);
+                //let result: u16 = (state.a as u16) + (state.memory[mem_offset as usize] as u16) + (state.condition.cy as u16);
+
+                //state.condition.set_add_flags(result);
+
+                //state.a = (result as u8) & 0xff;
+            }
+            // ADC B
+            0x8f => {
+                let result: u16 = (state.a as u16) + (state.a as u16) + (state.condition.cy as u16);
+
+                state.condition.set_add_flags(result);
+
                 state.a = (result as u8) & 0xff;
             }
             // ADI byte

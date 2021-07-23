@@ -13,7 +13,7 @@ impl ConditionCodes {
     pub fn set_add_flags(&mut self, val: u16) {
         self.set_zero_flag(val);
         self.set_sign_flag(val);
-        self.set_carry_flag(val);
+        self.set_carry_flag_add(val);
         let lower = val as u8;
         self.set_parity_flag(lower);
     }
@@ -34,7 +34,7 @@ impl ConditionCodes {
         }
     }
 
-    pub fn set_carry_flag(&mut self, val: u16) {
+    pub fn set_carry_flag_add(&mut self, val: u16) {
         if val > 0xff {
             self.cy = true;
         } else {
