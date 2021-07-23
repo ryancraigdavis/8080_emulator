@@ -41,7 +41,7 @@ impl ConditionCodes {
         }
     }
 
-    pub fn set_parity_flag(&mut self, val: u16) {
+    pub fn set_parity_flag(&mut self, val: u8) {
         let lower = val as u8;
         let one_count: u32 = lower.count_ones();
         if one_count & 1 == 0 {
