@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 pub fn print_all(buf: &Vec<u8>) {
     println!("start disassembly");
     let mut cursor = 0;
