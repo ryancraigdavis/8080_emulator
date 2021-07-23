@@ -14,7 +14,8 @@ impl ConditionCodes {
         self.set_zero_flag(val);
         self.set_sign_flag(val);
         self.set_carry_flag(val);
-        self.set_parity_flag(val);
+        let lower = val as u8;
+        self.set_parity_flag(lower);
     }
 
     pub fn set_zero_flag(&mut self, val: u16) {
@@ -42,8 +43,7 @@ impl ConditionCodes {
     }
 
     pub fn set_parity_flag(&mut self, val: u8) {
-        let lower = val as u8;
-        let one_count: u32 = lower.count_ones();
+        let one_count: u32 = val.count_ones();
         if one_count & 1 == 0 {
             self.p = true;
         } else {

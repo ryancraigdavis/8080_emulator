@@ -13,4 +13,12 @@ pub struct StateIntel8080 {
     pub sp: u16,
     pub pc: u16,
     pub condition: ConditionCodes,
+    pub memory: Vec<u8>,
+}
+
+impl StateIntel8080 {
+    pub fn init_mem(&mut self) {
+        // intel 8080 has a maximum memory of 64KB
+        self.memory = vec![0; 64000];
+    }
 }

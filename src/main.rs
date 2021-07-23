@@ -88,6 +88,83 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                 state.a = (y << 7) | (x >> 1);
                 state.condition.cy = 1 == (x&1);
             }
+            // ADD B
+            0x80 => {
+                // Increase precision to u16 for ease
+                let result: u16 = (state.a as u16) + (state.b as u16);
+
+                // Set flags based on results
+                state.condition.set_add_flags(result);
+
+                // Store final value
+                state.a = (result as u8) & 0xff;
+            }
+            // ADD C
+            0x81 => {
+                let result: u16 = (state.a as u16) + (state.c as u16);
+
+                state.condition.set_add_flags(result);
+
+                state.a = (result as u8) & 0xff;
+            }
+            // ADD D
+            0x82 => {
+                let result: u16 = (state.a as u16) + (state.d as u16);
+
+                state.condition.set_add_flags(result);
+
+                state.a = (result as u8) & 0xff;
+            }
+            // ADD E
+            0x83 => {
+                let result: u16 = (state.a as u16) + (state.e as u16);
+
+                state.condition.set_add_flags(result);
+
+                state.a = (result as u8) & 0xff;
+            }
+            // ADD H
+            0x84 => {
+                let result: u16 = (state.a as u16) + (state.h as u16);
+
+                state.condition.set_add_flags(result);
+
+                state.a = (result as u8) & 0xff;
+            }
+            // ADD L
+            0x85 => {
+                let result: u16 = (state.a as u16) + (state.l as u16);
+
+                state.condition.set_add_flags(result);
+
+                state.a = (result as u8) & 0xff;
+            }
+            // ADD Mem
+            0x86 => {
+                let mem_offset: u16 = ((state.h as u16) << 8) | (state.l as u16);
+                let result: u16 = (state.a as u16) + (state.memory[mem_offset as usize] as u16);
+
+                state.condition.set_add_flags(result);
+
+                state.a = (result as u8) & 0xff;
+            }
+            // ADD A
+            0x87 => {
+                let result: u16 = (state.a as u16) + (state.a as u16);
+        
+                state.condition.set_add_flags(result);
+        
+                state.a = (result as u8) & 0xff;
+            }
+            // ADI byte
+            0xc6 => {
+                let result: u16 = (state.a as u16) + (buf[cursor + 1] as u16);
+
+                state.condition.set_add_flags(result);
+
+                state.a = (result as u8) & 0xff;
+                state.pc += 1;
+            }
             // CPI
             0xfe => {
                 let x: u8 = state.a - buf[cursor + 1];
