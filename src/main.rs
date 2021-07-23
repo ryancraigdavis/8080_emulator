@@ -16,6 +16,7 @@ fn main() {
     //disassembler::print_all(&buf);
 
     let mut intel_8080_state: StateIntel8080 = Default::default();
+    //intel_8080_state.init_mem();
 
     // Main emulation function
     run_emulation(&mut intel_8080_state, &buf);
@@ -142,11 +143,11 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
             // ADD Mem
             0x86 => {
                 let mem_offset: u16 = ((state.h as u16) << 8) | (state.l as u16);
-                let result: u16 = (state.a as u16) + (state.memory[mem_offset as usize] as u16);
+                //let result: u16 = (state.a as u16) + (state.memory[mem_offset as usize] as u16);
 
-                state.condition.set_add_flags(result);
+                //state.condition.set_add_flags(result);
 
-                state.a = (result as u8) & 0xff;
+                //state.a = (result as u8) & 0xff;
             }
             // ADD A
             0x87 => {
