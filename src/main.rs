@@ -1,420 +1,703 @@
 use std::fs;
 use std::io::prelude::*;
+mod condition_codes;
+mod disassembler;
+mod intel8080_state;
+use intel8080_state::StateIntel8080;
 
 fn main() {
-    
-    println!("start disassembly");
     let file_name = String::from("invaders");
 
     let mut buf = Vec::new();
     let mut file_in = fs::File::open(file_name).unwrap();
     file_in.read_to_end(&mut buf).unwrap();
 
-    let mut cursor = 0;
+    // If we need to print out the full disassembly
+    //disassembler::print_all(&buf);
 
-    while cursor < buf.len()
-    {
-        print!("{:04x} ", cursor);
-        match buf[cursor]
-        {
-            0x00 => println!("NOP"),
+    let mut intel_8080_state: StateIntel8080 = Default::default();
+
+    //intel_8080_state.init_mem();
+
+
+    // Main emulation function
+    run_emulation(&mut intel_8080_state, &mut buf);
+
+    // Print out the current state (debugging)
+    println!("{:?}", intel_8080_state);
+}
+
+fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
+    // Loop control and current instruction location
+    let mut run_emu: bool = true;
+    let mut cursor: usize;
+
+    while run_emu {
+        cursor = state.pc as usize;
+        match buf[cursor] {
+            // NOP
+            0x00 => {}
+            // LXI B,word
             0x01 => {
-                    println!("LXI B,${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-		            cursor += 2;
-		            },
-            0x02 => println!("STAX B"),
-            0x03 => println!("INX B"),
-            0x04 => println!("INR B"),
-            0x05 => println!("DCR B"),
-            0x06 => {
-                    println!("MVI B,${:02x}", buf[cursor + 1]);
-		            cursor += 1;
-		            },
-            0x07 => println!("RLC"),
-            0x08 => println!("-"),	
-            0x09 => println!("DAD B"),
-            0x0a => println!("LDAX B"),
-            0x0b => println!("DCX B"),
-            0x0c => println!("INR C"),
-            0x0d => println!("DCR C"),
-            0x0e => {
-                    println!("MVI C,${:02x}", buf[cursor + 1]);
-		            cursor += 1;
-		            },
-            0x0f => println!("RRC"),
-            0x10 => println!("-"),	
-            0x11 => {
-                    println!("LXI D,${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
-            0x12 => println!("STAX D"),
-            0x13 => println!("INX D"),
-            0x14 => println!("INR D"),
-            0x15 => println!("DCR D"),
-            0x16 => {
-                    println!("MVI D,${:02x}", buf[cursor + 1]);
-            		cursor += 1;
-            		},
-            0x17 => println!("RAL"),
-            0x18 => println!("-"),	
-            0x19 => println!("DAD D"),
-            0x1a => println!("LDAX D"),
-            0x1b => println!("DCX D"),
-            0x1c => println!("INR E"),
-            0x1d => println!("DCR E"),
-            0x1e => {
-                    println!("MVI E,${:02x}", buf[cursor + 1]);
-            		cursor += 1;
-            		},
-            0x1f => println!("RAR"),
-            0x20 => println!("-"),	
-            0x21 => {
-                    println!("LXI H,${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
-            0x22 => {
-                    println!("SHLD ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
-            0x23 => println!("INX H"),
-            0x24 => println!("INR H"),
-            0x25 => println!("DCR H"),
-            0x26 => {
-                    println!("MVI H,${:02x}", buf[cursor + 1]);
-            		cursor += 1;
-            		},
-            0x27 => println!("DAA"),
-            0x28 => println!("-"),	
-            0x29 => println!("DAD H"),
-            0x2a => {
-                    println!("LHLD ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
-            0x2b => println!("DCX H"),
-            0x2c => println!("INR L"),
-            0x2d => println!("DCR L"),
-            0x2e => {
-                    println!("MVI L,${:02x}", buf[cursor + 1]);
-            		cursor += 1;
-            		},
-            0x2f => println!("CMA"),
-            0x30 => println!("-"),	
-            0x31 => {
-                    println!("LXI SP,${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
-            0x32 => {
-                    println!("STA ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
-            0x33 => println!("INX SP"),
-            0x34 => println!("INR M"),
-            0x35 => println!("DCR M"),
-            0x36 => {
-                    println!("MVI M,${:02x}", buf[cursor + 1]);
-            		cursor += 1;
-            		},
-            0x37 => println!("STC"),
-            0x38 => println!("-"),	
-            0x39 => println!("DAD SP"),
-            0x3a => {
-                    println!("LDA ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
-            0x3b => println!("DCX SP"),
-            0x3c => println!("INR A"),
-            0x3d => println!("DCR A"),
-            0x3e => {
-                    println!("MVI A,${:02x}", buf[cursor + 1]);
-            		cursor += 1;
-            		},
-            0x3f => println!("CMC"),
-            0x40 => println!("MOV B,B"),
-            0x41 => println!("MOV B,C"),
-            0x42 => println!("MOV B,D"),
-            0x43 => println!("MOV B,E"),
-            0x44 => println!("MOV B,H"),
-            0x45 => println!("MOV B,L"),
-            0x46 => println!("MOV B,M"),
-            0x47 => println!("MOV B,A"),
-            0x48 => println!("MOV C,B"),
-            0x49 => println!("MOV C,C"),
-            0x4a => println!("MOV C,D"),
-            0x4b => println!("MOV C,E"),
-            0x4c => println!("MOV C,H"),
-            0x4d => println!("MOV C,L"),
-            0x4e => println!("MOV C,M"),
-            0x4f => println!("MOV C,A"),
-            0x50 => println!("MOV D,B"),
-            0x51 => println!("MOV D,C"),
-            0x52 => println!("MOV D,D"),
-            0x53 => println!("MOV D,E"),
-            0x54 => println!("MOV D,H"),
-            0x55 => println!("MOV D,L"),
-            0x56 => println!("MOV D,M"),
-            0x57 => println!("MOV D,A"),
-            0x58 => println!("MOV E,B"),
-            0x59 => println!("MOV E,C"),
-            0x5a => println!("MOV E,D"),
-            0x5b => println!("MOV E,E"),
-            0x5c => println!("MOV E,H"),
-            0x5d => println!("MOV E,L"),
-            0x5e => println!("MOV E,M"),
-            0x5f => println!("MOV E,A"),
-            0x60 => println!("MOV H,B"),
-            0x61 => println!("MOV H,C"),
-            0x62 => println!("MOV H,D"),
-            0x63 => println!("MOV H,E"),
-            0x64 => println!("MOV H,H"),
-            0x65 => println!("MOV H,L"),
-            0x66 => println!("MOV H,M"),
-            0x67 => println!("MOV H,A"),
-            0x68 => println!("MOV L,B"),
-            0x69 => println!("MOV L,C"),
-            0x6a => println!("MOV L,D"),
-            0x6b => println!("MOV L,E"),
-            0x6c => println!("MOV L,H"),
-            0x6d => println!("MOV L,L"),
-            0x6e => println!("MOV L,M"),
-            0x6f => println!("MOV L,A"),
-            0x70 => println!("MOV M,B"),
-            0x71 => println!("MOV M,C"),
-            0x72 => println!("MOV M,D"),
-            0x73 => println!("MOV M,E"),
-            0x74 => println!("MOV M,H"),
-            0x75 => println!("MOV M,L"),
-            0x76 => println!("HLT"),
-            0x77 => println!("MOV M,A"),
-            0x78 => println!("MOV A,B"),
-            0x79 => println!("MOV A,C"),
-            0x7a => println!("MOV A,D"),
-            0x7b => println!("MOV A,E"),
-            0x7c => println!("MOV A,H"),
-            0x7d => println!("MOV A,L"),
-            0x7e => println!("MOV A,M"),
-            0x7f => println!("MOV A,A"),
-            0x80 => println!("ADD B"),
-            0x81 => println!("ADD C"),
-            0x82 => println!("ADD D"),
-            0x83 => println!("ADD E"),
-            0x84 => println!("ADD H"),
-            0x85 => println!("ADD L"),
-            0x86 => println!("ADD M"),
-            0x87 => println!("ADD A"),
-            0x88 => println!("ADC B"),
-            0x89 => println!("ADC C"),
-            0x8a => println!("ADC D"),
-            0x8b => println!("ADC E"),
-            0x8c => println!("ADC H"),
-            0x8d => println!("ADC L"),
-            0x8e => println!("ADC M"),
-            0x8f => println!("ADC A"),
-            0x90 => println!("SUB B"),
-            0x91 => println!("SUB C"),
-            0x92 => println!("SUB D"),
-            0x93 => println!("SUB E"),
-            0x94 => println!("SUB H"),
-            0x95 => println!("SUB L"),
-            0x96 => println!("SUB M"),
-            0x97 => println!("SUB A"),
-            0x98 => println!("SBB B"),
-            0x99 => println!("SBB C"),
-            0x9a => println!("SBB D"),
-            0x9b => println!("SBB E"),
-            0x9c => println!("SBB H"),
-            0x9d => println!("SBB L"),
-            0x9e => println!("SBB M"),
-            0x9f => println!("SBB A"),
-            0xa0 => println!("ANA B"),
-            0xa1 => println!("ANA C"),
-            0xa2 => println!("ANA D"),
-            0xa3 => println!("ANA E"),
-            0xa4 => println!("ANA H"),
-            0xa5 => println!("ANA L"),
-            0xa6 => println!("ANA M"),
-            0xa7 => println!("ANA A"),
-            0xa8 => println!("XRA B"),
-            0xa9 => println!("XRA C"),
-            0xaa => println!("XRA D"),
-            0xab => println!("XRA E"),
-            0xac => println!("XRA H"),
-            0xad => println!("XRA L"),
-            0xae => println!("XRA M"),
-            0xaf => println!("XRA A"),
-            0xb0 => println!("ORA B"),
-            0xb1 => println!("ORA C"),
-            0xb2 => println!("ORA D"),
-            0xb3 => println!("ORA E"),
-            0xb4 => println!("ORA H"),
-            0xb5 => println!("ORA L"),
-            0xb6 => println!("ORA M"),
-            0xb7 => println!("ORA A"),
-            0xb8 => println!("CMP B"),
-            0xb9 => println!("CMP C"),
-            0xba => println!("CMP D"),
-            0xbb => println!("CMP E"),
-            0xbc => println!("CMP H"),
-            0xbd => println!("CMP L"),
-            0xbe => println!("CMP M"),
-            0xbf => println!("CMP A"),
-            0xc0 => println!("RNZ"),
-            0xc1 => println!("POP B"),
-            0xc2 => {
-                    println!("JNZ ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
-            0xc3 => {
-                    println!("JMP ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
-            0xc4 => {
-                    println!("CNZ ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
-            0xc5 => println!("PUSH B"),
-            0xc6 => {
-                    println!("ADI {:02x}", buf[cursor + 1]);
-            		cursor += 1;
-            		},
-            0xc7 => println!("RST 0"),
-            0xc8 => println!("RZ"),
-            0xc9 => println!("RET"),
-            0xca => {
-                    println!("JZ ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
-            0xcb => println!("-"),	
-            0xcc => {
-                    println!("CZ ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
-            0xcd => {
-                    println!("CALL ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
-            0xce => {
-                    println!("ACI {:02x}", buf[cursor + 1]);
-            		cursor += 1;
-            		},
-            0xcf => println!("RST 1"),
-            0xd0 => println!("RNC"),
-            0xd1 => println!("POP D"),
-            0xd2 => {
-                    println!("JNC ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
-            0xd3 => {
-                    println!("OUT {:02x}", buf[cursor + 1]);
-            		cursor += 1;
-            		},
-            0xd4 => {
-                    println!("CNC ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
-            0xd5 => println!("PUSH D"),
-            0xd6 => {
-                    println!("SUI {:02x}", buf[cursor + 1]);
-            		cursor += 1;
-            		},
-            0xd7 => println!("RST 2"),
-            0xd8 => println!("RC"),
-            0xd9 => println!("-"),	
-            0xda => {
-                    println!("JC ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
-            0xdb => {
-                    println!("IN {:02x}", buf[cursor + 1]);
-            		cursor += 1;
-            		},
-            0xdc => {
-                    println!("CC ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
-            0xdd => println!("-"),	
-            0xde => {
-                    println!("SBI {:02x}", buf[cursor + 1]);
-            		cursor += 1;
-            		},
-            0xdf => println!("RST 3"),
-            0xe0 => println!("RPO"),
-            0xe1 => println!("POP H"),
-            0xe2 => {
-                    println!("JPO ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
-            0xe3 => println!("XTHL"),
-            0xe4 => {
-                    println!("CPO ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
-            0xe5 => println!("PUSH H"),
+                state.c = buf[cursor + 2];
+                state.b = buf[cursor + 1];
+                state.pc += 2;
+            }
+            // INR B
+            0x04 => {
+                let result: u16 = (state.b as u16) + 1;
+                state.condition.set_inr_flags(result);
+                state.b = (result as u8) & 0xff;
+            }
+            // INR C
+            0x0c => {
+                let result: u16 = (state.c as u16) + 1;
+                state.condition.set_inr_flags(result);
+                state.c = (result as u8) & 0xff;
+            }
+            // INR D
+            0x14 => {
+                let result: u16 = (state.d as u16) + 1;
+                state.condition.set_inr_flags(result);
+                state.d = (result as u8) & 0xff;
+            }
+            // INR E
+            0x1c => {
+                let result: u16 = (state.e as u16) + 1;
+                state.condition.set_inr_flags(result);
+                state.e = (result as u8) & 0xff;
+            }
+            // INR H
+            0x24 => {
+                let result: u16 = (state.h as u16) + 1;
+                state.condition.set_inr_flags(result);
+                state.h = (result as u8) & 0xff;
+            }
+            // INR L
+            0x2c => {
+                let result: u16 = (state.l as u16) + 1;
+                state.condition.set_inr_flags(result);
+                state.l = (result as u8) & 0xff;
+            }
+            // INR Mem
+            0x34 => {
+                let mem_offset: u16 = ((state.h as u16) << 8) | (state.l as u16);
+                //let result: u16 = (state.memory[mem_offset as usize] as u16) + 1;
+                //state.condition.set_inr_flags(result);
+                //state.memory[mem_offset as usize] = (result as u8) & 0xff;
+            }
+            // INR A
+            0x3c => {
+                let result: u16 = (state.a as u16) + 1;
+                state.condition.set_inr_flags(result);
+                state.a = (result as u8) & 0xff;
+            }
+            // MOV B,C
+            0x41 => {
+                state.b = state.c;
+            }
+            // MOV B,D
+            0x42 => {
+                state.b = state.d;
+            }
+            // MOV B,E
+            0x43 => {
+                state.b = state.e;
+            }
+            // CMA (not) - doesn't affect flags
+            0x2f => {
+                state.a = !state.a;
+            }
+            // CMC
+            0x3f => {
+                state.condition.cy = !state.condition.cy;
+            }
+            // STC
+            0x37 => {
+                state.condition.cy = true;
+            }
+            // ANI
             0xe6 => {
-                    println!("ANI {:02x}", buf[cursor + 1]);
-            		cursor += 1;
-            		},
-            0xe7 => println!("RST 4"),
-            0xe8 => println!("RPE"),
-            0xe9 => println!("PCHL"),
-            0xea => {
-                    println!("JPE ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
-            0xeb => println!("XCHG"),
-            0xec => {
-                    println!("CPE ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
-            0xed => println!("-"),	
-            0xee => {
-                    println!("XRI {:02x}", buf[cursor + 1]);
-            		cursor += 1;
-            		},
-            0xef => println!("RST 5"),
-            0xf0 => println!("RP"),
-            0xf1 => println!("POP PSW"),
-            0xf2 => {
-                    println!("JP ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
-            0xf3 => println!("DI"),
-            0xf4 => {
-                    println!("CP ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
-            0xf5 => println!("PUSH PSW"),
-            0xf6 => {
-                    println!("ORI {:02x}", buf[cursor + 1]);
-            		cursor += 1;
-            		},
-            0xf7 => println!("RST 6"),
-            0xf8 => println!("RM"),
-            0xf9 => println!("SPHL"),
-            0xfa => {
-                    println!("JM ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
-            0xfb => println!("EI"),
-            0xfc => {
-                    println!("CM ${:02x}{:02x}", buf[cursor + 2], buf[cursor + 1]);
-            		cursor += 2;
-            		},
-            0xfd => println!("-"),	
+                let x: u8 = state.a & buf[cursor + 1];
+                state.condition.z = x == 0;
+                state.condition.s = 0x80 == (x & 0x80);
+                state.condition.set_parity_flag(x);
+                //Data book says ANI clears CY
+                state.condition.cy = false;
+                state.a = x;
+                state.pc += 1;
+            }
+            // RRC
+            0x0f => {
+                let x: u8 = state.a;
+                state.a = ((x & 1) << 7) | (x >> 1);
+                state.condition.cy = 1 == (x & 1);
+            }
+            // RAR
+            0x1f => {
+                let x: u8 = state.a;
+                let y: u8 = state.condition.cy as u8;
+                state.a = (y << 7) | (x >> 1);
+                state.condition.cy = 1 == (x & 1);
+            }
+            // ADD B
+            0x80 => {
+                // Increase precision to u16 for ease
+                let result: u16 = (state.a as u16) + (state.b as u16);
+                // Set flags based on results
+                state.condition.set_add_flags(result);
+                // Store final value
+                state.a = (result as u8) & 0xff;
+            }
+            // ADD C
+            0x81 => {
+                let result: u16 = (state.a as u16) + (state.c as u16);
+                state.condition.set_add_flags(result);
+                state.a = (result as u8) & 0xff;
+            }
+            // ADD D
+            0x82 => {
+                let result: u16 = (state.a as u16) + (state.d as u16);
+                state.condition.set_add_flags(result);
+                state.a = (result as u8) & 0xff;
+            }
+            // ADD E
+            0x83 => {
+                let result: u16 = (state.a as u16) + (state.e as u16);
+                state.condition.set_add_flags(result);
+                state.a = (result as u8) & 0xff;
+            }
+            // ADD H
+            0x84 => {
+                let result: u16 = (state.a as u16) + (state.h as u16);
+                state.condition.set_add_flags(result);
+                state.a = (result as u8) & 0xff;
+            }
+            // ADD L
+            0x85 => {
+                let result: u16 = (state.a as u16) + (state.l as u16);
+                state.condition.set_add_flags(result);
+                state.a = (result as u8) & 0xff;
+            }
+            // ADD Mem
+            0x86 => {
+                let mem_offset: u16 = ((state.h as u16) << 8) | (state.l as u16);
+                //let result: u16 = (state.a as u16) + (state.memory[mem_offset as usize] as u16);
+                //state.condition.set_add_flags(result);
+                //state.a = (result as u8) & 0xff;
+            }
+            // ADD A
+            0x87 => {
+                let result: u16 = (state.a as u16) + (state.a as u16);
+                state.condition.set_add_flags(result);
+                state.a = (result as u8) & 0xff;
+            }
+            // ADC B
+            0x88 => {
+                let result: u16 = (state.a as u16) + (state.b as u16) + (state.condition.cy as u16);
+                state.condition.set_add_flags(result);
+                state.a = (result as u8) & 0xff;
+            }
+            // ADC C
+            0x89 => {
+                let result: u16 = (state.a as u16) + (state.c as u16) + (state.condition.cy as u16);
+                state.condition.set_add_flags(result);
+                state.a = (result as u8) & 0xff;
+            }
+            // ADC D
+            0x8a => {
+                let result: u16 = (state.a as u16) + (state.d as u16) + (state.condition.cy as u16);
+                state.condition.set_add_flags(result);
+                state.a = (result as u8) & 0xff;
+            }
+            // ADC E
+            0x8b => {
+                let result: u16 = (state.a as u16) + (state.e as u16) + (state.condition.cy as u16);
+                state.condition.set_add_flags(result);
+                state.a = (result as u8) & 0xff;
+            }
+            // ADC H
+            0x8c => {
+                let result: u16 = (state.a as u16) + (state.h as u16) + (state.condition.cy as u16);
+                state.condition.set_add_flags(result);
+                state.a = (result as u8) & 0xff;
+            }
+            // ADC L
+            0x8d => {
+                let result: u16 = (state.a as u16) + (state.l as u16) + (state.condition.cy as u16);
+                state.condition.set_add_flags(result);
+                state.a = (result as u8) & 0xff;
+            }
+            // ADC Mem
+            0x8e => {
+                let mem_offset: u16 = ((state.h as u16) << 8) | (state.l as u16);
+                //let result: u16 = (state.a as u16) + (state.memory[mem_offset as usize] as u16) + (state.condition.cy as u16);
+                //state.condition.set_add_flags(result);
+                //state.a = (result as u8) & 0xff;
+            }
+            // ADC B
+            0x8f => {
+                let result: u16 = (state.a as u16) + (state.a as u16) + (state.condition.cy as u16);
+                state.condition.set_add_flags(result);
+                state.a = (result as u8) & 0xff;
+            }
+            // SUB A
+            0x97 => {
+                // Subtracts A from A, equaling zero
+                let result: u16 = 0;
+                state.condition.set_sub_flags(result);
+                state.condition.cy = true;
+                state.a = (result as u8) & 0xff;
+            }
+            // ADI byte
+            0xc6 => {
+                let result: u16 = (state.a as u16) + (buf[cursor + 1] as u16);
+
+                state.condition.set_add_flags(result);
+
+                state.a = (result as u8) & 0xff;
+                state.pc += 1;
+            }
+            // ACI byte
+            0xce => {
+                let result: u16 =
+                    (state.a as u16) + (buf[cursor + 1] as u16) + (state.condition.cy as u16);
+
+                state.condition.set_add_flags(result);
+
+                state.a = (result as u8) & 0xff;
+                state.pc += 1;
+            }
+            // CPI
             0xfe => {
-                    println!("CPI {:02x}", buf[cursor + 1]);
-            		cursor += 1;
-            		},
-            0xff => {
-                    println!("RST {:02x}", buf[cursor + 1]);
-                    cursor += 1;
-                    } 
+                let x: u8 = state.a - buf[cursor + 1];
+                state.condition.z = x == 0;
+                state.condition.s = 0x80 == (x & 0x80);
+                state.condition.set_parity_flag(x);
+                state.condition.cy = state.a < buf[cursor + 1];
+                state.pc += 1;
+            }
+            // CMP B
+            0xb8 => {
+                let x: u8 = state.a - state.b;
+                state.condition.z = x == 0;
+                state.condition.s = 0x80 == (x & 0x80);
+                state.condition.set_parity_flag(x);
+                state.condition.cy = state.a < state.b;
+                state.pc += 1;
+            }
+            // CMP C
+            0xb9 => {
+                let x: u8 = state.a - state.c;
+                state.condition.z = x == 0;
+                state.condition.s = 0x80 == (x & 0x80);
+                state.condition.set_parity_flag(x);
+                state.condition.cy = state.a < state.c;
+                state.pc += 1;
+            }
+            // CMP D
+            0xba => {
+                let x: u8 = state.a - state.d;
+                state.condition.z = x == 0;
+                state.condition.s = 0x80 == (x & 0x80);
+                state.condition.set_parity_flag(x);
+                state.condition.cy = state.a < state.d;
+                state.pc += 1;
+            }
+            // CMP E
+            0xbb => {
+                let x: u8 = state.a - state.e;
+                state.condition.z = x == 0;
+                state.condition.s = 0x80 == (x & 0x80);
+                state.condition.set_parity_flag(x);
+                state.condition.cy = state.a < state.e;
+                state.pc += 1;
+            }
+            // CMP H
+            0xbc => {
+                let x: u8 = state.a - state.h;
+                state.condition.z = x == 0;
+                state.condition.s = 0x80 == (x & 0x80);
+                state.condition.set_parity_flag(x);
+                state.condition.cy = state.a < state.h;
+                state.pc += 1;
+            }
+            // CMP L
+            0xbd => {
+                let x: u8 = state.a - state.l;
+                state.condition.z = x == 0;
+                state.condition.s = 0x80 == (x & 0x80);
+                state.condition.set_parity_flag(x);
+                state.condition.cy = state.a < state.l;
+                state.pc += 1;
+            }
+            // CMP M
+            0xbe => {
+                // let x: u8 = state.a - state.m;
+                // state.condition.z = x == 0;
+                // state.condition.s = 0x80 == (x & 0x80);
+                // state.condition.set_parity_flag(x);
+                // state.condition.cy = state.a < state.m;
+                state.pc += 1;
+            }
+            // CMP A
+            0xbf => {
+                let x: u8 = state.a - state.a;
+                state.condition.z = x == 0;
+                state.condition.s = 0x80 == (x & 0x80);
+                state.condition.set_parity_flag(x);
+                state.condition.cy = state.a < state.a;
+                state.pc += 1;
+            }
+
+            //new starts here
+            //EI
+            0xfb =>{
+                 state.condition.set_inr_flags(1);
+            }
+
+            //DI
+            //return to, unfinished -- wrong opcode?
+            0xc6 =>{
+                state.condition.set_inr_flags(0);
+            }
+                
+            //in -says to leave unimplemented and return to later
+            0xdb =>{}
+
+            //out - says to leave unimplemented and return to later
+            0xd3 => {}
+
+            //jmp
+            0xc3 => {
+                state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+            }
+
+            //JNZ
+            0xc2 => {
+                if (state.condition.z){
+                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
                 }
-            
-            cursor += 1;
-            
-            
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //JZ
+            0xf2 => {
+                if (! state.condition.z){
+                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //JC
+            0xda =>{
+                if (! state.condition.cy){
+                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //JNC
+            0xd2 => {
+                if (state.condition.cy){
+                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //JPO
+            0xe2 => {
+                if (! state.condition.p){
+                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //jpe
+            0xea => {
+                if (state.condition.p){
+                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //jp (plus)
+            0xf2 => {
+                if (state.condition.s){
+                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                }
+                else{
+                    state.pc += 2;
+                } 
+            }
+
+            //jm (minus)
+            0xfa => {
+                if (! state.condition.s){
+                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                }
+                else{
+                    state.pc += 2;
+                }  
+            }
+
+            //call - doesn't implement negative
+            //return to this
+            0xcd =>{
+                let result = (state.pc as u16) + 2;
+                buf[cursor -1] = ((result >> 8) as u8) & 0xff;
+                buf[cursor -2] = ((result as u8) & 0xff); 
+                state.sp -= 2;
+                state.pc = ((buf [cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16); 
+            }
+
+            //ret
+            0xc9 => {
+                state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
+                state.sp += 2;
+            }
+
+            //cz
+            0xcc=>{
+                if state.condition.z {
+                    let result = (state.pc as u16) + 2;
+                    buf[cursor -1] = ((result >> 8) as u8) & 0xff;
+                    buf[cursor -2] = ((result as u8) & 0xff); 
+                    state.sp -= 2;
+                    state.pc = ((buf [cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16); 
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //cnz
+            0xc4=>{
+                if !state.condition.z {
+                    let result = (state.pc as u16) + 2;
+                    buf[cursor -1] = ((result >> 8) as u8) & 0xff;
+                    buf[cursor -2] = ((result as u8) & 0xff); 
+                    state.sp -= 2;
+                    state.pc = ((buf [cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16); 
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //rz
+            0xc8=>{
+                if state.condition.z {
+                    state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
+                    state.sp += 2;
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //rnz
+            0xc0=>{
+                if !state.condition.z {
+                    state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
+                    state.sp += 2;
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //cnc
+            0xd4=>{
+                if !state.condition.cy {
+                    let result = (state.pc as u16) + 2;
+                    buf[cursor -1] = ((result >> 8) as u8) & 0xff;
+                    buf[cursor -2] = ((result as u8) & 0xff); 
+                    state.sp -= 2;
+                    state.pc = ((buf [cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16); 
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //cc
+            0xdc=>{
+                if state.condition.cy {
+                    let result = (state.pc as u16) + 2;
+                    buf[cursor -1] = ((result >> 8) as u8) & 0xff;
+                    buf[cursor -2] = ((result as u8) & 0xff); 
+                    state.sp -= 2;
+                    state.pc = ((buf [cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16); 
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //rnc
+            0xd0=>{
+                if !state.condition.cy {
+                    state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
+                    state.sp += 2;
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //rc
+            0xd8=>{
+                if state.condition.cy {
+                    state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
+                    state.sp += 2;
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //cpo
+            0xe4=>{
+                if state.condition.p {
+                    let result = (state.pc as u16) + 2;
+                    buf[cursor -1] = ((result >> 8) as u8) & 0xff;
+                    buf[cursor -2] = ((result as u8) & 0xff); 
+                    state.sp -= 2;
+                    state.pc = ((buf [cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16); 
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //cpe
+            0xec=>{
+                if !state.condition.p {
+                    let result = (state.pc as u16) + 2;
+                    buf[cursor -1] = ((result >> 8) as u8) & 0xff;
+                    buf[cursor -2] = ((result as u8) & 0xff); 
+                    state.sp -= 2;
+                    state.pc = ((buf [cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16); 
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //rpo
+            0xe0=>{
+                if state.condition.p {
+                    state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
+                    state.sp += 2;
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //rpe
+            0xe8=>{
+                if !state.condition.p {
+                    state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
+                    state.sp += 2;
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //cp
+            0xf4=>{
+                if state.condition.s {
+                    let result = (state.pc as u16) + 2;
+                    buf[cursor -1] = ((result >> 8) as u8) & 0xff;
+                    buf[cursor -2] = ((result as u8) & 0xff); 
+                    state.sp -= 2;
+                    state.pc = ((buf [cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16); 
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //cm
+            0xfc=>{
+                if !state.condition.s {
+                    let result = (state.pc as u16) + 2;
+                    buf[cursor -1] = ((result >> 8) as u8) & 0xff;
+                    buf[cursor -2] = ((result as u8) & 0xff); 
+                    state.sp -= 2;
+                    state.pc = ((buf [cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16); 
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //rp
+            0xf0=>{
+                if state.condition.s {
+                    state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
+                    state.sp += 2;
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //rm
+            0xf8=>{
+                if !state.condition.s {
+                    state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
+                    state.sp += 2;
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //pchl
+            //return to 
+            0xe9 =>{
+
+            }
+
+            //rst
+            //return to
+            0xc7 =>{
+
+            }
+
+
+
+
+
+
+            // Everything else (unimplemented)
+            _ => {
+                run_emu = unimplemented(&buf[cursor]);
+            }
         }
 
-    println!("---------------------------------------");
+        state.pc += 1;
+    }
+}
 
+fn unimplemented(hexcode: &u8) -> bool {
+    // If the instruction isn't implemented yet
+    println!("Unimplemented instruction : {:02x}", hexcode);
+    false
 }
