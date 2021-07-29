@@ -347,6 +347,337 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                 state.condition.cy = state.a < state.a;
                 state.pc += 1;
             }
+            
+            //EI
+            0xfb =>{
+                 state.condition.set_inr_flags(1);
+            }
+
+            //DI
+            //return to, unfinished -- wrong opcode?
+            0xc6 =>{
+                state.condition.set_inr_flags(0);
+            }
+                
+            //in -says to leave unimplemented and return to later
+            0xdb =>{}
+
+            //out - says to leave unimplemented and return to later
+            0xd3 => {}
+
+            //jmp
+            0xc3 => {
+                state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+            }
+
+            //JNZ
+            0xc2 => {
+                if (state.condition.z){
+                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //JZ
+            0xf2 => {
+                if (! state.condition.z){
+                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //JC
+            0xda =>{
+                if (! state.condition.cy){
+                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //JNC
+            0xd2 => {
+                if (state.condition.cy){
+                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //JPO
+            0xe2 => {
+                if (! state.condition.p){
+                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //jpe
+            0xea => {
+                if (state.condition.p){
+                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //jp (plus)
+            0xf2 => {
+                if (state.condition.s){
+                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                }
+                else{
+                    state.pc += 2;
+                } 
+            }
+
+            //jm (minus)
+            0xfa => {
+                if (! state.condition.s){
+                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                }
+                else{
+                    state.pc += 2;
+                }  
+            }
+
+            //call - doesn't implement negative
+            //return to this
+            0xcd =>{
+                let result = (state.pc as u16) + 2;
+                buf[cursor -1] = ((result >> 8) as u8) & 0xff;
+                buf[cursor -2] = ((result as u8) & 0xff); 
+                state.sp -= 2;
+                state.pc = ((buf [cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16); 
+            }
+
+            //ret
+            0xc9 => {
+                state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
+                state.sp += 2;
+            }
+
+            //cz
+            0xcc=>{
+                if state.condition.z {
+                    let result = (state.pc as u16) + 2;
+                    buf[cursor -1] = ((result >> 8) as u8) & 0xff;
+                    buf[cursor -2] = ((result as u8) & 0xff); 
+                    state.sp -= 2;
+                    state.pc = ((buf [cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16); 
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //cnz
+            0xc4=>{
+                if !state.condition.z {
+                    let result = (state.pc as u16) + 2;
+                    buf[cursor -1] = ((result >> 8) as u8) & 0xff;
+                    buf[cursor -2] = ((result as u8) & 0xff); 
+                    state.sp -= 2;
+                    state.pc = ((buf [cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16); 
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //rz
+            0xc8=>{
+                if state.condition.z {
+                    state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
+                    state.sp += 2;
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //rnz
+            0xc0=>{
+                if !state.condition.z {
+                    state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
+                    state.sp += 2;
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //cnc
+            0xd4=>{
+                if !state.condition.cy {
+                    let result = (state.pc as u16) + 2;
+                    buf[cursor -1] = ((result >> 8) as u8) & 0xff;
+                    buf[cursor -2] = ((result as u8) & 0xff); 
+                    state.sp -= 2;
+                    state.pc = ((buf [cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16); 
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //cc
+            0xdc=>{
+                if state.condition.cy {
+                    let result = (state.pc as u16) + 2;
+                    buf[cursor -1] = ((result >> 8) as u8) & 0xff;
+                    buf[cursor -2] = ((result as u8) & 0xff); 
+                    state.sp -= 2;
+                    state.pc = ((buf [cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16); 
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //rnc
+            0xd0=>{
+                if !state.condition.cy {
+                    state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
+                    state.sp += 2;
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //rc
+            0xd8=>{
+                if state.condition.cy {
+                    state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
+                    state.sp += 2;
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //cpo
+            0xe4=>{
+                if state.condition.p {
+                    let result = (state.pc as u16) + 2;
+                    buf[cursor -1] = ((result >> 8) as u8) & 0xff;
+                    buf[cursor -2] = ((result as u8) & 0xff); 
+                    state.sp -= 2;
+                    state.pc = ((buf [cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16); 
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //cpe
+            0xec=>{
+                if !state.condition.p {
+                    let result = (state.pc as u16) + 2;
+                    buf[cursor -1] = ((result >> 8) as u8) & 0xff;
+                    buf[cursor -2] = ((result as u8) & 0xff); 
+                    state.sp -= 2;
+                    state.pc = ((buf [cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16); 
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //rpo
+            0xe0=>{
+                if state.condition.p {
+                    state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
+                    state.sp += 2;
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //rpe
+            0xe8=>{
+                if !state.condition.p {
+                    state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
+                    state.sp += 2;
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //cp
+            0xf4=>{
+                if state.condition.s {
+                    let result = (state.pc as u16) + 2;
+                    buf[cursor -1] = ((result >> 8) as u8) & 0xff;
+                    buf[cursor -2] = ((result as u8) & 0xff); 
+                    state.sp -= 2;
+                    state.pc = ((buf [cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16); 
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //cm
+            0xfc=>{
+                if !state.condition.s {
+                    let result = (state.pc as u16) + 2;
+                    buf[cursor -1] = ((result >> 8) as u8) & 0xff;
+                    buf[cursor -2] = ((result as u8) & 0xff); 
+                    state.sp -= 2;
+                    state.pc = ((buf [cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16); 
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //rp
+            0xf0=>{
+                if state.condition.s {
+                    state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
+                    state.sp += 2;
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //rm
+            0xf8=>{
+                if !state.condition.s {
+                    state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
+                    state.sp += 2;
+                }
+                else{
+                    state.pc += 2;
+                }
+            }
+
+            //pchl
+            //return to 
+            0xe9 =>{
+
+            }
+
+            //rst
+            //return to
+            0xc7 =>{
+
+            }
+
             // Everything else (unimplemented)
             _ => {
                 run_emu = unimplemented(&buf[cursor]);
