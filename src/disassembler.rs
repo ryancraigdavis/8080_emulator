@@ -1,6 +1,5 @@
 #[allow(dead_code)]
-pub fn get_single(buf: &Vec<u8>, cur: usize) -> usize
-{
+pub fn get_single(buf: &Vec<u8>, cur: usize) -> usize {
     let mut cursor = cur;
     match buf[cursor] {
         0x00 => println!("NOP"),
@@ -408,7 +407,7 @@ pub fn print_all(buf: &Vec<u8>) {
         print!("{:04x} ", cursor);
 
         cursor = get_single(&buf, cursor);
-        
+
         cursor += 1;
     }
 

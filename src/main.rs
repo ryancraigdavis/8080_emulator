@@ -124,14 +124,14 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
                 state.e += 1;
                 if state.e == 0 {
                     state.d += 1;
-                } 
+                }
             }
             // INX H
             0x23 => {
                 state.l += 1;
                 if state.l == 0 {
                     state.h += 1;
-                } 
+                }
             }
             // LDAX D
             0x1a => {
@@ -773,7 +773,6 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
         if printstate {
             println!("{:?}", state);
         }
-        
     }
 }
 
