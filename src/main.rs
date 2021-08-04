@@ -17,23 +17,28 @@ fn main() {
 
     let mut intel_8080_state: StateIntel8080 = Default::default();
 
-    //intel_8080_state.init_mem();
-
+    intel_8080_state.init_mem();
 
     // Main emulation function
     run_emulation(&mut intel_8080_state, &mut buf);
 
     // Print out the current state (debugging)
-    println!("{:?}", intel_8080_state);
+    //println!("{:?}", intel_8080_state);
 }
 
 fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
     // Loop control and current instruction location
     let mut run_emu: bool = true;
     let mut cursor: usize;
+    let mut incr: bool = true;
+    let mut printstate: bool = false;
 
     while run_emu {
+        incr = true;
+        printstate = false;
         cursor = state.pc as usize;
+        print!("{:04x} ", cursor);
+        disassembler::get_single(&buf, cursor);
         match buf[cursor] {
             // NOP
             0x00 => {}
@@ -49,11 +54,110 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
                 state.condition.set_inr_flags(result);
                 state.b = (result as u8) & 0xff;
             }
+            // DCR B
+            0x05 => {
+                let result: u16 = (state.b as u16) - 1;
+                state.condition.z = result == 0;
+                state.condition.s = 0x80 == (result & 0x80);
+                state.condition.set_parity_flag(result as u8);
+                state.b = result as u8;
+            }
+            // DCR C
+            0x0d => {
+                let result: u16 = (state.c as u16) - 1;
+                state.condition.z = result == 0;
+                state.condition.s = 0x80 == (result & 0x80);
+                state.condition.set_parity_flag(result as u8);
+                state.c = result as u8;
+            }
+            // MVI B,byte
+            0x06 => {
+                state.b = buf[cursor + 1];
+                state.pc += 1;
+            }
+            // DAD B
+            0x09 => {
+                let hl: u16 = ((state.h as u16) << 8) | state.l as u16;
+                let bc: u16 = ((state.b as u16) << 8) | state.c as u16;
+                let result: u16 = hl + bc;
+                state.h = (result & 0xff00) as u8;
+                state.l = (result & 0xff) as u8;
+                state.condition.cy = (result & 0xffff) > 0;
+            }
+            // DAD D
+            0x19 => {
+                let hl: u16 = ((state.h as u16) << 8) | state.l as u16;
+                let de: u16 = ((state.d as u16) << 8) | state.e as u16;
+                let result: u16 = hl + de;
+                state.h = (result & 0xff00) as u8;
+                state.l = (result & 0xff) as u8;
+                state.condition.cy = (result & 0xffff) != 0;
+            }
+            // DAD H
+            0x29 => {
+                let hl: u16 = ((state.h as u16) << 8) | state.l as u16;
+                let result: u16 = hl + hl;
+                state.h = (result & 0xff00) as u8;
+                state.l = (result & 0xff) as u8;
+                state.condition.cy = (result & 0xffff) != 0;
+            }
+            // LXI D,word
+            0x11 => {
+                state.e = buf[cursor + 2];
+                state.d = buf[cursor + 1];
+                state.pc += 2;
+            }
+            // LXI H,word
+            0x21 => {
+                state.h = buf[cursor + 2];
+                state.l = buf[cursor + 1];
+                state.pc += 2;
+                //printstate = true;
+            }
+            // LXI SP,word
+            0x31 => {
+                state.sp = (buf[cursor + 2] as u16) << 8 | buf[cursor + 1] as u16;
+                state.pc += 2;
+            }
+            // INX D
+            0x13 => {
+                state.e += 1;
+                if state.e == 0 {
+                    state.d += 1;
+                }
+            }
+            // INX H
+            0x23 => {
+                state.l += 1;
+                if state.l == 0 {
+                    state.h += 1;
+                }
+            }
+            // LDAX D
+            0x1a => {
+                let mem_offset: u16 = (state.d as u16) << 8 | state.e as u16;
+                state.a = state.memory[mem_offset as usize];
+            }
             // INR C
             0x0c => {
                 let result: u16 = (state.c as u16) + 1;
                 state.condition.set_inr_flags(result);
                 state.c = (result as u8) & 0xff;
+            }
+            // MVI C,byte
+            0x0e => {
+                state.c = buf[cursor + 1];
+                state.pc += 1;
+            }
+            // MVI A,byte
+            0x3e => {
+                state.a = buf[cursor + 1];
+                state.pc += 1;
+            }
+            // MVI H,byte
+            0x26 => {
+                state.h = buf[cursor + 1];
+                state.pc += 1;
             }
             // INR D
             0x14 => {
@@ -352,18 +456,18 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
 
             //new starts here
             //EI
-            0xfb =>{
-                 state.condition.set_inr_flags(1);
+            0xfb => {
+                state.condition.set_inr_flags(1);
             }
 
             //DI
             //return to, unfinished -- wrong opcode?
-            0xc6 =>{
+            0xc6 => {
                 state.condition.set_inr_flags(0);
             }
-                
+
             //in -says to leave unimplemented and return to later
-            0xdb =>{}
+            0xdb => {}
 
             //out - says to leave unimplemented and return to later
             0xd3 => {}
@@ -371,96 +475,93 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
             //jmp
             0xc3 => {
                 state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                incr = false;
             }
 
             //JNZ
             0xc2 => {
-                if (state.condition.z){
+                if state.condition.z {
                     state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
-                }
-                else{
+                } else {
                     state.pc += 2;
                 }
             }
 
             //JZ
             0xf2 => {
-                if (! state.condition.z){
+                if !state.condition.z {
                     state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
-                }
-                else{
+                } else {
                     state.pc += 2;
                 }
             }
 
             //JC
-            0xda =>{
-                if (! state.condition.cy){
+            0xda => {
+                if !state.condition.cy {
                     state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
-                }
-                else{
+                } else {
                     state.pc += 2;
                 }
             }
 
             //JNC
             0xd2 => {
-                if (state.condition.cy){
+                if state.condition.cy {
                     state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
-                }
-                else{
+                } else {
                     state.pc += 2;
                 }
             }
 
             //JPO
             0xe2 => {
-                if (! state.condition.p){
+                if !state.condition.p {
                     state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
-                }
-                else{
+                } else {
                     state.pc += 2;
                 }
             }
 
             //jpe
             0xea => {
-                if (state.condition.p){
+                if state.condition.p {
                     state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
-                }
-                else{
+                } else {
                     state.pc += 2;
                 }
             }
 
             //jp (plus)
             0xf2 => {
-                if (state.condition.s){
+                if state.condition.s {
                     state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
-                }
-                else{
+                } else {
                     state.pc += 2;
-                } 
+                }
             }
 
             //jm (minus)
             0xfa => {
-                if (! state.condition.s){
+                if !state.condition.s {
                     state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
-                }
-                else{
+                } else {
                     state.pc += 2;
-                }  
+                }
             }
 
             //call - doesn't implement negative
             //return to this
-            0xcd =>{
+            0xcd => {
                 let result = (state.pc as u16) + 2;
-                buf[cursor -1] = ((result >> 8) as u8) & 0xff;
-                buf[cursor -2] = ((result as u8) & 0xff); 
+                //buf[cursor - 1] = ((result >> 8) as u8) & 0xff;
+                //buf[cursor - 2] = (result as u8) & 0xff;
+                state.memory[(state.sp - 1) as usize] = ((result >> 8) as u8) & 0xff;
+                state.memory[(state.sp - 2) as usize] = (result as u8) & 0xff;
                 state.sp -= 2;
-                state.pc = ((buf [cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16); 
+                state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                incr = false;
+                //printstate = true;
             }
 
             //ret
@@ -470,229 +571,208 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
             }
 
             //cz
-            0xcc=>{
+            0xcc => {
                 if state.condition.z {
                     let result = (state.pc as u16) + 2;
-                    buf[cursor -1] = ((result >> 8) as u8) & 0xff;
-                    buf[cursor -2] = ((result as u8) & 0xff); 
+                    buf[cursor - 1] = ((result >> 8) as u8) & 0xff;
+                    buf[cursor - 2] = (result as u8) & 0xff;
                     state.sp -= 2;
-                    state.pc = ((buf [cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16); 
-                }
-                else{
+                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                } else {
                     state.pc += 2;
                 }
             }
 
             //cnz
-            0xc4=>{
+            0xc4 => {
                 if !state.condition.z {
                     let result = (state.pc as u16) + 2;
-                    buf[cursor -1] = ((result >> 8) as u8) & 0xff;
-                    buf[cursor -2] = ((result as u8) & 0xff); 
+                    buf[cursor - 1] = ((result >> 8) as u8) & 0xff;
+                    buf[cursor - 2] = (result as u8) & 0xff;
                     state.sp -= 2;
-                    state.pc = ((buf [cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16); 
-                }
-                else{
+                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                } else {
                     state.pc += 2;
                 }
             }
 
             //rz
-            0xc8=>{
+            0xc8 => {
                 if state.condition.z {
                     state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
                     state.sp += 2;
-                }
-                else{
+                } else {
                     state.pc += 2;
                 }
             }
 
             //rnz
-            0xc0=>{
+            0xc0 => {
                 if !state.condition.z {
                     state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
                     state.sp += 2;
-                }
-                else{
+                } else {
                     state.pc += 2;
                 }
             }
 
             //cnc
-            0xd4=>{
+            0xd4 => {
                 if !state.condition.cy {
                     let result = (state.pc as u16) + 2;
-                    buf[cursor -1] = ((result >> 8) as u8) & 0xff;
-                    buf[cursor -2] = ((result as u8) & 0xff); 
+                    buf[cursor - 1] = ((result >> 8) as u8) & 0xff;
+                    buf[cursor - 2] = (result as u8) & 0xff;
                     state.sp -= 2;
-                    state.pc = ((buf [cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16); 
-                }
-                else{
+                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                } else {
                     state.pc += 2;
                 }
             }
 
             //cc
-            0xdc=>{
+            0xdc => {
                 if state.condition.cy {
                     let result = (state.pc as u16) + 2;
-                    buf[cursor -1] = ((result >> 8) as u8) & 0xff;
-                    buf[cursor -2] = ((result as u8) & 0xff); 
+                    buf[cursor - 1] = ((result >> 8) as u8) & 0xff;
+                    buf[cursor - 2] = (result as u8) & 0xff;
                     state.sp -= 2;
-                    state.pc = ((buf [cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16); 
-                }
-                else{
+                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                } else {
                     state.pc += 2;
                 }
             }
 
             //rnc
-            0xd0=>{
+            0xd0 => {
                 if !state.condition.cy {
                     state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
                     state.sp += 2;
-                }
-                else{
+                } else {
                     state.pc += 2;
                 }
             }
 
             //rc
-            0xd8=>{
+            0xd8 => {
                 if state.condition.cy {
                     state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
                     state.sp += 2;
-                }
-                else{
+                } else {
                     state.pc += 2;
                 }
             }
 
             //cpo
-            0xe4=>{
+            0xe4 => {
                 if state.condition.p {
                     let result = (state.pc as u16) + 2;
-                    buf[cursor -1] = ((result >> 8) as u8) & 0xff;
-                    buf[cursor -2] = ((result as u8) & 0xff); 
+                    buf[cursor - 1] = ((result >> 8) as u8) & 0xff;
+                    buf[cursor - 2] = (result as u8) & 0xff;
                     state.sp -= 2;
-                    state.pc = ((buf [cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16); 
-                }
-                else{
+                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                } else {
                     state.pc += 2;
                 }
             }
 
             //cpe
-            0xec=>{
+            0xec => {
                 if !state.condition.p {
                     let result = (state.pc as u16) + 2;
-                    buf[cursor -1] = ((result >> 8) as u8) & 0xff;
-                    buf[cursor -2] = ((result as u8) & 0xff); 
+                    buf[cursor - 1] = ((result >> 8) as u8) & 0xff;
+                    buf[cursor - 2] = (result as u8) & 0xff;
                     state.sp -= 2;
-                    state.pc = ((buf [cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16); 
-                }
-                else{
+                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                } else {
                     state.pc += 2;
                 }
             }
 
             //rpo
-            0xe0=>{
+            0xe0 => {
                 if state.condition.p {
                     state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
                     state.sp += 2;
-                }
-                else{
+                } else {
                     state.pc += 2;
                 }
             }
 
             //rpe
-            0xe8=>{
+            0xe8 => {
                 if !state.condition.p {
                     state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
                     state.sp += 2;
-                }
-                else{
+                } else {
                     state.pc += 2;
                 }
             }
 
             //cp
-            0xf4=>{
+            0xf4 => {
                 if state.condition.s {
                     let result = (state.pc as u16) + 2;
-                    buf[cursor -1] = ((result >> 8) as u8) & 0xff;
-                    buf[cursor -2] = ((result as u8) & 0xff); 
+                    buf[cursor - 1] = ((result >> 8) as u8) & 0xff;
+                    buf[cursor - 2] = (result as u8) & 0xff;
                     state.sp -= 2;
-                    state.pc = ((buf [cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16); 
-                }
-                else{
+                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                } else {
                     state.pc += 2;
                 }
             }
 
             //cm
-            0xfc=>{
+            0xfc => {
                 if !state.condition.s {
                     let result = (state.pc as u16) + 2;
-                    buf[cursor -1] = ((result >> 8) as u8) & 0xff;
-                    buf[cursor -2] = ((result as u8) & 0xff); 
+                    buf[cursor - 1] = ((result >> 8) as u8) & 0xff;
+                    buf[cursor - 2] = (result as u8) & 0xff;
                     state.sp -= 2;
-                    state.pc = ((buf [cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16); 
-                }
-                else{
+                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                } else {
                     state.pc += 2;
                 }
             }
 
             //rp
-            0xf0=>{
+            0xf0 => {
                 if state.condition.s {
                     state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
                     state.sp += 2;
-                }
-                else{
+                } else {
                     state.pc += 2;
                 }
             }
 
             //rm
-            0xf8=>{
+            0xf8 => {
                 if !state.condition.s {
                     state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
                     state.sp += 2;
-                }
-                else{
+                } else {
                     state.pc += 2;
                 }
             }
 
             //pchl
-            //return to 
-            0xe9 =>{
-
-            }
+            //return to
+            0xe9 => {}
 
             //rst
             //return to
-            0xc7 =>{
-
-            }
-
-
-
-
-
+            0xc7 => {}
 
             // Everything else (unimplemented)
             _ => {
                 run_emu = unimplemented(&buf[cursor]);
             }
         }
-
-        state.pc += 1;
+        if incr {
+            state.pc += 1;
+        }
+        if printstate {
+            println!("{:?}", state);
+        }
     }
 }
 
