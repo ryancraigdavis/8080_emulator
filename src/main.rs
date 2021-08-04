@@ -57,10 +57,44 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
                 state.condition.set_parity_flag(result as u8);
                 state.b = result as u8;
             }
+            // DCR C
+            0x0d => {
+                let result: u16 = (state.c as u16) - 1;
+                state.condition.z = result == 0;
+                state.condition.s = 0x80 == (result & 0x80);
+                state.condition.set_parity_flag(result as u8);
+                state.c = (result as u8);
+            }
             // MVI B,byte
             0x06 => {
                 state.b = buf[cursor + 1];
                 state.pc += 1;
+            }
+            // DAD B
+            0x09 => {
+                let hl: u32 = (state.h << 8) | state.l;
+                let bc: u32 = (state.b << 8) | state.c;
+                let result: u32 = hl + bc;
+                state.h = (result & 0xff00) >> 8;
+                state.l = result & 0xff;
+                state.condition.cy = ((result & 0xffff0000) > 0);
+            }
+            // DAD D
+            0x19 => {
+                let hl: u32 = (state.h << 8) | state.l;
+                let de: u32 = (state.d << 8) | state.e;
+                let result: u32 = hl + de;
+                state.h = (result & 0xff00) >> 8;
+                state.l = result & 0xff;
+                state.condition.cy = ((result & 0xffff0000) != 0);
+            }
+            // DAD H
+            0x29 => {
+                let hl: u32 = (state.h << 8) | state.l;
+                let result: u32 = hl + hl;
+                state.h = (result & 0xff00) >> 8;
+                state.l = result & 0xff;
+                state.condition.cy = ((result & 0xffff0000) != 0);
             }
             // INR C
             0x0c => {
