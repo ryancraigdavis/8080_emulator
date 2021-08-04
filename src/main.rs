@@ -38,6 +38,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
             // NOP
             0x00 => {}
             // LXI B,word
+            // I think the buffers need to be switched
             0x01 => {
                 state.c = buf[cursor + 2];
                 state.b = buf[cursor + 1];
@@ -49,11 +50,39 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
                 state.condition.set_inr_flags(result);
                 state.b = (result as u8) & 0xff;
             }
+            // DCR B
+            0x05 => {
+                let result: u16 = (state.b as u16) - 1;
+                state.condition.z = result == 0;
+                state.condition.s = 0x80 == (result & 0x80);
+                state.condition.set_parity_flag(result as u8);
+                state.b = (result as u8);
+            }
+            // MVI B,byte
+            0x06 => {
+                state.b = buf[cursor + 1];
+                state.pc += 1;
+            }
             // INR C
             0x0c => {
                 let result: u16 = (state.c as u16) + 1;
                 state.condition.set_inr_flags(result);
                 state.c = (result as u8) & 0xff;
+            }
+            // MVI C,byte
+            0x0e => {
+                state.c = buf[cursor + 1];
+                state.pc += 1;
+            }
+            // MVI A,byte
+            0x3e => {
+                state.a = buf[cursor + 1];
+                state.pc += 1;
+            }
+            // MVI H,byte
+            0x26 => {
+                state.h = buf[cursor + 1];
+                state.pc += 1;
             }
             // INR D
             0x14 => {
