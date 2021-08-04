@@ -23,21 +23,26 @@ fn main() {
     run_emulation(&mut intel_8080_state, &mut buf);
 
     // Print out the current state (debugging)
-    println!("{:?}", intel_8080_state);
+    //println!("{:?}", intel_8080_state);
 }
 
 fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
     // Loop control and current instruction location
     let mut run_emu: bool = true;
     let mut cursor: usize;
+    let mut incr: bool = true;
+    let mut printstate: bool = false;
 
     while run_emu {
+        incr = true;
+        printstate = false;
         cursor = state.pc as usize;
+        print!("{:04x} ", cursor);
+        disassembler::get_single(&buf, cursor);
         match buf[cursor] {
             // NOP
             0x00 => {}
             // LXI B,word
-            // I think the buffers need to be switched
             0x01 => {
                 state.c = buf[cursor + 2];
                 state.b = buf[cursor + 1];
@@ -63,7 +68,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
                 state.condition.z = result == 0;
                 state.condition.s = 0x80 == (result & 0x80);
                 state.condition.set_parity_flag(result as u8);
-                state.c = (result as u8);
+                state.c = result as u8;
             }
             // MVI B,byte
             0x06 => {
@@ -72,45 +77,46 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
             }
             // DAD B
             0x09 => {
-                let hl: u32 = (state.h << 8) | state.l;
-                let bc: u32 = (state.b << 8) | state.c;
-                let result: u32 = hl + bc;
-                state.h = (result & 0xff00) >> 8;
-                state.l = result & 0xff;
-                state.condition.cy = ((result & 0xffff0000) > 0);
+                let hl: u16 = ((state.h as u16) << 8) | state.l as u16;
+                let bc: u16 = ((state.b as u16) << 8) | state.c as u16;
+                let result: u16 = hl + bc;
+                state.h = (result & 0xff00) as u8;
+                state.l = (result & 0xff) as u8;
+                state.condition.cy = (result & 0xffff) > 0;
             }
             // DAD D
             0x19 => {
-                let hl: u32 = (state.h << 8) | state.l;
-                let de: u32 = (state.d << 8) | state.e;
-                let result: u32 = hl + de;
-                state.h = (result & 0xff00) >> 8;
-                state.l = result & 0xff;
-                state.condition.cy = ((result & 0xffff0000) != 0);
+                let hl: u16 = ((state.h as u16) << 8) | state.l as u16;
+                let de: u16 = ((state.d as u16) << 8) | state.e as u16;
+                let result: u16 = hl + de;
+                state.h = (result & 0xff00) as u8;
+                state.l = (result & 0xff) as u8;
+                state.condition.cy = (result & 0xffff) != 0;
             }
             // DAD H
             0x29 => {
-                let hl: u32 = (state.h << 8) | state.l;
-                let result: u32 = hl + hl;
-                state.h = (result & 0xff00) >> 8;
-                state.l = result & 0xff;
-                state.condition.cy = ((result & 0xffff0000) != 0);
+                let hl: u16 = ((state.h as u16) << 8) | state.l as u16;
+                let result: u16 = hl + hl;
+                state.h = (result & 0xff00) as u8;
+                state.l = (result & 0xff) as u8;
+                state.condition.cy = (result & 0xffff) != 0;
             }
             // LXI D,word
             0x11 => {
-                state.e = buf[cursor + 1];
-                state.d = buf[cursor + 2];
+                state.e = buf[cursor + 2];
+                state.d = buf[cursor + 1];
                 state.pc += 2;
             }
             // LXI H,word
             0x21 => {
-                state.l = buf[cursor + 1];
                 state.h = buf[cursor + 2];
+                state.l = buf[cursor + 1];
                 state.pc += 2;
+                printstate = true;
             }
             // LXI SP,word
             0x31 => {
-                state.sp = (buf[cursor + 2] << 8) | buf[cursor + 1];
+                state.sp = (buf[cursor + 2] as u16) << 8 | buf[cursor + 1] as u16;
                 state.pc += 2;
             }
             // INX D
@@ -129,8 +135,8 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
             }
             // LDAX D
             0x1a => {
-                let mem_offset: u16 = (state.d << 8) | state.e;
-                state.a = state.memory[mem_offset];
+                //let mem_offset: u16 = (state.d << 8) | state.e;
+                //state.a = state.memory[mem_offset];
             }
             // INR C
             0x0c => {
@@ -469,6 +475,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
             //jmp
             0xc3 => {
                 state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                incr = false;
             }
 
             //JNZ
@@ -547,10 +554,14 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
             //return to this
             0xcd => {
                 let result = (state.pc as u16) + 2;
-                buf[cursor - 1] = ((result >> 8) as u8) & 0xff;
-                buf[cursor - 2] = (result as u8) & 0xff;
+                //buf[cursor - 1] = ((result >> 8) as u8) & 0xff;
+                //buf[cursor - 2] = (result as u8) & 0xff;
+                state.memory[(state.sp - 1) as usize] = ((result >> 8) as u8) & 0xff;
+                state.memory[(state.sp - 2) as usize] = (result as u8) & 0xff;
                 state.sp -= 2;
                 state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                incr = false;
+                //printstate = true;
             }
 
             //ret
@@ -756,8 +767,13 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
                 run_emu = unimplemented(&buf[cursor]);
             }
         }
-
-        state.pc += 1;
+        if incr {
+            state.pc += 1;
+        }
+        if printstate {
+            println!("{:?}", state);
+        }
+        
     }
 }
 

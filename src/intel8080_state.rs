@@ -19,6 +19,6 @@ pub struct StateIntel8080 {
 impl StateIntel8080 {
     pub fn init_mem(&mut self) {
         // intel 8080 has a maximum memory of 64KB
-        self.memory = vec![0; 64000];
+        self.memory = vec![0; 0xffff];
     }
 }

@@ -1,5 +1,4 @@
 #[allow(dead_code)]
-
 pub fn get_single(buf: &Vec<u8>, cur: usize) -> usize
 {
     let mut cursor = cur;
@@ -400,7 +399,7 @@ pub fn get_single(buf: &Vec<u8>, cur: usize) -> usize
     cursor
 }
 
-
+#[allow(dead_code)]
 pub fn print_all(buf: &Vec<u8>) {
     println!("start disassembly");
     let mut cursor: usize = 0;
