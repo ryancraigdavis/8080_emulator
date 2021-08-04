@@ -112,7 +112,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
                 state.h = buf[cursor + 2];
                 state.l = buf[cursor + 1];
                 state.pc += 2;
-                printstate = true;
+                //printstate = true;
             }
             // LXI SP,word
             0x31 => {
@@ -135,8 +135,8 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
             }
             // LDAX D
             0x1a => {
-                //let mem_offset: u16 = (state.d << 8) | state.e;
-                //state.a = state.memory[mem_offset];
+                let mem_offset: u16 = (state.d as u16) << 8 | state.e as u16;
+                state.a = state.memory[mem_offset as usize];
             }
             // INR C
             0x0c => {
