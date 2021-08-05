@@ -140,6 +140,18 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
                 let mem_offset: u16 = (state.h as u16) << 8 | state.l as u16;
                 state.memory[mem_offset as usize] = state.a;
             }
+            // STA word
+            0x32 => {
+                let mem_offset: u16 = (buf[cursor + 2] as u16) << 8 | buf[cursor + 1] as u16;
+                state.memory[mem_offset as usize] = state.a;
+                state.pc += 2;
+            }
+            // LDA word
+            0x3a => {
+                let mem_offset: u16 = (buf[cursor + 2] as u16) << 8 | buf[cursor + 1] as u16;
+                state.a = state.memory[mem_offset as usize]; 
+                state.pc += 2;
+            }
             // INR C
             0x0c => {
                 let result: u16 = (state.c as u16) + 1;
@@ -159,6 +171,12 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
             // MVI H,byte
             0x26 => {
                 state.h = buf[cursor + 1];
+                state.pc += 1;
+            }
+            // MVI M,byte
+            0x36 => {
+                let mem_offset: u16 = (state.h as u16) << 8 | state.l as u16;
+                state.memory[mem_offset as usize] = buf[cursor + 1];
                 state.pc += 1;
             }
             // INR D
@@ -210,6 +228,47 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
             0x43 => {
                 state.b = state.e;
             }
+            // MOV D,M
+            0x56 => {
+                let mem_offset: u16 = (state.h as u16) << 8 | state.l as u16;
+                state.d = state.memory[mem_offset as usize];
+            }
+            // MOV E,M
+            0x5e => {
+                let mem_offset: u16 = (state.h as u16) << 8 | state.l as u16;
+                state.e = state.memory[mem_offset as usize];
+            }
+            // MOV H,M
+            0x66 => {
+                let mem_offset: u16 = (state.h as u16) << 8 | state.l as u16;
+                state.h = state.memory[mem_offset as usize];
+            }
+            // MOV L,A
+            0x6f => {
+                state.l = state.a;
+            }
+            // MOV M,A
+            /* 0x77 => {
+                let mem_offset: u16 = (state.h as u16) << 8 | state.l as u16;
+                state.memory[mem_offset as usize] = state.a;
+            } */
+            // MOV A,D
+            0x7a => {
+                state.a = state.d;
+            }
+            // MOV A,E
+            0x7b => {
+                state.a = state.e;
+            }
+            // MOV A,H
+            0x7c => {
+                state.a = state.h;
+            }
+            // MOV A,M
+            0x7e => {
+                let mem_offset: u16 = (state.h as u16) << 8 | state.l as u16;
+                state.a = state.memory[mem_offset as usize];
+            }
             // CMA (not) - doesn't affect flags
             0x2f => {
                 state.a = !state.a;
@@ -222,6 +281,28 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
             0x37 => {
                 state.condition.cy = true;
             }
+            // ANA A
+            0xa7 => {
+                let x: u8 = state.a & state.a;
+                state.condition.z = x == 0;
+                state.condition.s = 0x80 == (x & 0x80);
+                state.condition.set_parity_flag(x);
+                state.condition.cy = false;
+                state.condition.ac = false;
+                state.a = x;
+                state.pc += 1;
+            }
+            // XRA A
+            0xaf => {
+                let x: u8 = state.a ^ state.a;
+                state.condition.z = x == 0;
+                state.condition.s = 0x80 == (x & 0x80);
+                state.condition.set_parity_flag(x);
+                state.condition.cy = false;
+                state.condition.ac = false;
+                state.a = x;
+                state.pc += 1;
+            }
             // ANI
             0xe6 => {
                 let x: u8 = state.a & buf[cursor + 1];
@@ -230,8 +311,18 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
                 state.condition.set_parity_flag(x);
                 //Data book says ANI clears CY
                 state.condition.cy = false;
+                state.condition.ac = false;
                 state.a = x;
                 state.pc += 1;
+            }
+            // XCHG
+            0xeb => {
+                let save1: u8 = state.d;
+                let save2: u8 = state.e;
+                state.d = state.h;
+                state.e = state.l;
+                state.h = save1;
+                state.l = save2;
             }
             // RRC
             0x0f => {
