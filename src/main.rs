@@ -17,7 +17,7 @@ fn main() {
 
     let mut intel_8080_state: StateIntel8080 = Default::default();
 
-    intel_8080_state.init_mem();
+    intel_8080_state.init_mem(&mut buf);
 
     // Main emulation function
     run_emulation(&mut intel_8080_state, &mut buf);
@@ -49,8 +49,8 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
             0x00 => {}
             // LXI B,word
             0x01 => {
-                state.c = buf[cursor + 2];
-                state.b = buf[cursor + 1];
+                state.b = buf[cursor + 2];
+                state.c = buf[cursor + 1];
                 state.pc += 2;
             }
             // INR B
