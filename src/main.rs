@@ -39,6 +39,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
         incr = true;
         printstate = false;
         cursor = state.pc as usize;
+        print!("{:?} ", count);
         print!("{:04x} ", cursor);
         disassembler::get_single(&buf, cursor);
         count+= 1;
