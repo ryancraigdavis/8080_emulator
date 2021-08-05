@@ -138,6 +138,18 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
                 let mem_offset: u16 = (state.d as u16) << 8 | state.e as u16;
                 state.a = state.memory[mem_offset as usize];
             }
+            // STA word
+            0x32 => {
+                let mem_offset: u16 = (buf[cursor + 2] as u16) << 8 | buf[cursor + 1] as u16;
+                state.memory[mem_offset as usize] = state.a;
+                state.pc += 2;
+            }
+            // LDA word
+            0x3a => {
+                let mem_offset: u16 = (buf[cursor + 2] as u16) << 8 | buf[cursor + 1] as u16;
+                state.a = state.memory[mem_offset as usize]; 
+                state.pc += 2;
+            }
             // INR C
             0x0c => {
                 let result: u16 = (state.c as u16) + 1;
@@ -157,6 +169,12 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
             // MVI H,byte
             0x26 => {
                 state.h = buf[cursor + 1];
+                state.pc += 1;
+            }
+            // MVI M,byte
+            0x36 => {
+                let mem_offset: u16 = (state.h as u16) << 8 | state.l as u16;
+                state.memory[mem_offset as usize] = buf[cursor + 1];
                 state.pc += 1;
             }
             // INR D
