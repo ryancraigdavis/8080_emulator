@@ -241,11 +241,6 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
             0x6f => {
                 state.l = state.a;
             }
-            // MOV M,A
-            /* 0x77 => {
-                let mem_offset: u16 = (state.h as u16) << 8 | state.l as u16;
-                state.memory[mem_offset as usize] = state.a;
-            } */
             // MOV A,D
             0x7a => {
                 state.a = state.d;
@@ -523,15 +518,6 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
                 state.condition.cy = state.a < state.l;
                 state.pc += 1;
             }
-            // CMP M
-            0xbe => {
-                // let x: u8 = state.a - state.m;
-                // state.condition.z = x == 0;
-                // state.condition.s = 0x80 == (x & 0x80);
-                // state.condition.set_parity_flag(x);
-                // state.condition.cy = state.a < state.m;
-                state.pc += 1;
-            }
             // CMP A
             0xbf => {
                 let x: u8 = state.a - state.a;
@@ -557,8 +543,10 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
             //in -says to leave unimplemented and return to later
             0xdb => {}
 
-            //out - says to leave unimplemented and return to later
-            0xd3 => {}
+            // OUT
+            0xd3 => {
+                state.pc += 1;
+            }
 
             //jmp
             0xc3 => {
