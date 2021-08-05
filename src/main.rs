@@ -23,7 +23,7 @@ fn main() {
     run_emulation(&mut intel_8080_state, &mut buf);
 
     // Print out the current state (debugging)
-    //println!("{:?}", intel_8080_state);
+    println!("{:?}", intel_8080_state);
 }
 
 fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
@@ -32,6 +32,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
     let mut cursor: usize;
     let mut incr: bool = true;
     let mut printstate: bool = false;
+    let mut count = 0;
 
     while run_emu {
         incr = true;
@@ -50,17 +51,13 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
             }
             // INR B
             0x04 => {
-                let result: u16 = (state.b as u16) + 1;
-                state.condition.set_inr_flags(result);
-                state.b = (result as u8) & 0xff;
+                state.b = state.b.overflowing_add(1).0;
+                state.condition.set_inr_flags(state.b as u16);
             }
             // DCR B
             0x05 => {
-                let result: u16 = (state.b as u16) - 1;
-                state.condition.z = result == 0;
-                state.condition.s = 0x80 == (result & 0x80);
-                state.condition.set_parity_flag(result as u8);
-                state.b = result as u8;
+                state.b = state.b.overflowing_sub(1).0;
+                state.condition.set_dcr_flags(state.b as u16);
             }
             // DCR C
             0x0d => {
@@ -103,8 +100,8 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
             }
             // LXI D,word
             0x11 => {
-                state.e = buf[cursor + 2];
-                state.d = buf[cursor + 1];
+                state.d = buf[cursor + 2];
+                state.e = buf[cursor + 1];
                 state.pc += 2;
             }
             // LXI H,word
@@ -112,7 +109,6 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
                 state.h = buf[cursor + 2];
                 state.l = buf[cursor + 1];
                 state.pc += 2;
-                //printstate = true;
             }
             // LXI SP,word
             0x31 => {
@@ -121,22 +117,28 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
             }
             // INX D
             0x13 => {
-                state.e += 1;
+                state.e = state.e.overflowing_add(1).0;
                 if state.e == 0 {
-                    state.d += 1;
+                    state.d = state.d.overflowing_add(1).0;
                 }
             }
             // INX H
             0x23 => {
-                state.l += 1;
+                state.l = state.l.overflowing_add(1).0;
                 if state.l == 0 {
-                    state.h += 1;
+                    state.h = state.h.overflowing_add(1).0;
                 }
             }
             // LDAX D
             0x1a => {
                 let mem_offset: u16 = (state.d as u16) << 8 | state.e as u16;
                 state.a = state.memory[mem_offset as usize];
+
+            }
+            // MOV M,A
+            0x77 => {
+                let mem_offset: u16 = (state.h as u16) << 8 | state.l as u16;
+                state.memory[mem_offset as usize] = state.a;
             }
             // INR C
             0x0c => {
@@ -480,8 +482,9 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
 
             //JNZ
             0xc2 => {
-                if state.condition.z {
+                if !state.condition.z {
                     state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                    incr = false;
                 } else {
                     state.pc += 2;
                 }
@@ -561,12 +564,12 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
                 state.sp -= 2;
                 state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
                 incr = false;
-                //printstate = true;
             }
 
             //ret
             0xc9 => {
-                state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
+                state.pc = state.memory[state.sp as usize] as u16 | (state.memory[(state.sp + 1) as usize] as u16) << 8;
+                //state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
                 state.sp += 2;
             }
 
@@ -772,6 +775,9 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
         }
         if printstate {
             println!("{:?}", state);
+        }
+        if count > 5 {
+            break;
         }
     }
 }
