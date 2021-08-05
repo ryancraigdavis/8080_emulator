@@ -33,7 +33,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
     let mut incr: bool = true;
     let mut printstate: bool = false;
     let mut count = 0;
-    let maxcount = 100000;
+    let maxcount = 10;
 
     while run_emu {
         incr = true;
@@ -41,6 +41,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
         cursor = state.pc as usize;
         print!("{:?} ", count);
         print!("{:04x} ", cursor);
+        print!("{:02x} ", buf[cursor]);
         disassembler::get_single(&buf, cursor);
         count+= 1;
         match buf[cursor] {
