@@ -33,6 +33,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
     let mut incr: bool = true;
     let mut printstate: bool = false;
     let mut count = 0;
+    let maxcount = 100000;
 
     while run_emu {
         incr = true;
@@ -40,6 +41,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
         cursor = state.pc as usize;
         print!("{:04x} ", cursor);
         disassembler::get_single(&buf, cursor);
+        count+= 1;
         match buf[cursor] {
             // NOP
             0x00 => {}
@@ -51,21 +53,18 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
             }
             // INR B
             0x04 => {
-                state.b = state.b.overflowing_add(1).0;
+                state.b = state.b.wrapping_add(1);
                 state.condition.set_inr_flags(state.b as u16);
             }
             // DCR B
             0x05 => {
-                state.b = state.b.overflowing_sub(1).0;
+                state.b = state.b.wrapping_sub(1);
                 state.condition.set_dcr_flags(state.b as u16);
             }
             // DCR C
             0x0d => {
-                let result: u16 = (state.c as u16) - 1;
-                state.condition.z = result == 0;
-                state.condition.s = 0x80 == (result & 0x80);
-                state.condition.set_parity_flag(result as u8);
-                state.c = result as u8;
+                state.d = state.d.wrapping_sub(1);
+                state.condition.set_dcr_flags(state.d as u16);
             }
             // MVI B,byte
             0x06 => {
@@ -117,23 +116,23 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
             }
             // INX D
             0x13 => {
-                state.e = state.e.overflowing_add(1).0;
+                state.e = state.e.wrapping_add(1);
                 if state.e == 0 {
-                    state.d = state.d.overflowing_add(1).0;
+                    state.d = state.d.wrapping_add(1);
                 }
             }
             // INX H
             0x23 => {
-                state.l = state.l.overflowing_add(1).0;
+                state.l = state.l.wrapping_add(1);
                 if state.l == 0 {
-                    state.h = state.h.overflowing_add(1).0;
+                    state.h = state.h.wrapping_add(1);
                 }
             }
             // LDAX D
             0x1a => {
                 let mem_offset: u16 = (state.d as u16) << 8 | state.e as u16;
+                println!("{:?}", mem_offset);
                 state.a = state.memory[mem_offset as usize];
-
             }
             // MOV M,A
             0x77 => {
@@ -154,9 +153,8 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
             }
             // INR C
             0x0c => {
-                let result: u16 = (state.c as u16) + 1;
-                state.condition.set_inr_flags(result);
-                state.c = (result as u8) & 0xff;
+                state.c = state.c.wrapping_add(1);
+                state.condition.set_inr_flags(state.c as u16);
             }
             // MVI C,byte
             0x0e => {
@@ -181,27 +179,23 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
             }
             // INR D
             0x14 => {
-                let result: u16 = (state.d as u16) + 1;
-                state.condition.set_inr_flags(result);
-                state.d = (result as u8) & 0xff;
+                state.d = state.d.wrapping_add(1);
+                state.condition.set_inr_flags(state.d as u16);
             }
             // INR E
             0x1c => {
-                let result: u16 = (state.e as u16) + 1;
-                state.condition.set_inr_flags(result);
-                state.e = (result as u8) & 0xff;
+                state.e = state.e.wrapping_add(1);
+                state.condition.set_inr_flags(state.e as u16);
             }
             // INR H
             0x24 => {
-                let result: u16 = (state.h as u16) + 1;
-                state.condition.set_inr_flags(result);
-                state.h = (result as u8) & 0xff;
+                state.h = state.h.wrapping_add(1);
+                state.condition.set_inr_flags(state.h as u16);
             }
             // INR L
             0x2c => {
-                let result: u16 = (state.l as u16) + 1;
-                state.condition.set_inr_flags(result);
-                state.l = (result as u8) & 0xff;
+                state.l = state.l.wrapping_add(1);
+                state.condition.set_inr_flags(state.l as u16);
             }
             // INR Mem
             0x34 => {
@@ -212,9 +206,8 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
             }
             // INR A
             0x3c => {
-                let result: u16 = (state.a as u16) + 1;
-                state.condition.set_inr_flags(result);
-                state.a = (result as u8) & 0xff;
+                state.a = state.a.wrapping_add(1);
+                state.condition.set_inr_flags(state.a as u16);
             }
             // MOV B,C
             0x41 => {
@@ -467,11 +460,14 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
             }
             // CPI
             0xfe => {
-                let x: u8 = state.a - buf[cursor + 1];
-                state.condition.z = x == 0;
-                state.condition.s = 0x80 == (x & 0x80);
-                state.condition.set_parity_flag(x);
-                state.condition.cy = state.a < buf[cursor + 1];
+                //let x: u8 = state.a - buf[cursor + 1];
+
+                let x = state.a.overflowing_sub(buf[cursor + 1]);
+                state.condition.z = x.0 == 0;
+                state.condition.s = 0x80 == (x.0 & 0x80);
+                state.condition.set_parity_flag(x.0);
+                //state.condition.cy = state.a < buf[cursor + 1];
+                state.condition.cy = x.1;
                 state.pc += 1;
             }
             // CMP B
@@ -867,7 +863,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
         if printstate {
             println!("{:?}", state);
         }
-        if count > 5 {
+        if count > maxcount {
             break;
         }
     }
