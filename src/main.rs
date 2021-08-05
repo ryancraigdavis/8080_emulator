@@ -133,7 +133,6 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
             0x1a => {
                 let mem_offset: u16 = (state.d as u16) << 8 | state.e as u16;
                 state.a = state.memory[mem_offset as usize];
-
             }
             // MOV M,A
             0x77 => {
@@ -459,9 +458,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
             0xce => {
                 let result: u16 =
                     (state.a as u16) + (buf[cursor + 1] as u16) + (state.condition.cy as u16);
-
                 state.condition.set_add_flags(result);
-
                 state.a = (result as u8) & 0xff;
                 state.pc += 1;
             }
@@ -847,8 +844,77 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
                     state.pc += 2;
                 }
             }
+            // POP B
+            0xc1 => {
+                state.c = state.memory[state.sp as usize];
+                state.b = state.memory[state.sp as usize + 1];
+                state.sp += 2;
+            }
+            // PUSH B
+            0xc5 => {
+                state.memory[state.sp as usize - 1] = state.b;
+                state.memory[state.sp as usize - 2] = state.c;
+                state.sp = state.sp - 2;
+            }
+            // POP D
+            0xd1 => {
+                state.e = state.memory[state.sp as usize];
+                state.d = state.memory[state.sp as usize + 1];
+                state.sp += 2;
+            }
+            // PUSH D
+            0xd5 => {
+                state.memory[state.sp as usize - 1] = state.d;
+                state.memory[state.sp as usize - 2] = state.e;
+                state.sp = state.sp - 2;
+            }
+            // POP H
+            0xe1 => {
+                state.l = state.memory[state.sp as usize];
+                state.h = state.memory[state.sp as usize + 1];
+                state.sp += 2;
+            }
+            // PUSH H
+            0xe5 => {
+                state.memory[state.sp as usize - 1] = state.h;
+                state.memory[state.sp as usize - 2] = state.l;
+                state.sp = state.sp - 2;
+            }
+            // POP PSW
+            0xf1 => {
+                state.a = state.memory[state.sp as usize + 1];
+                let psw: u8 = state.memory[state.sp as usize];
+                state.condition.z = 0x01 == (psw & 0x01);
+                state.condition.s = 0x02 == (psw & 0x02);
+                state.condition.p = 0x04 == (psw & 0x04);
+                state.condition.cy = 0x05 == (psw & 0x05);
+                state.condition.ac = 0x10 == (psw & 0x10);
+                state.sp += 2;
+            }
+            // PUSH PSW
+            0xf5 => {
+                state.memory[state.sp as usize - 1] = state.a;
+                let mut z_int: u8 = 0;
+                let mut s_int: u8 = 0;
+                let mut p_int: u8 = 0;
+                let mut cy_int: u8 = 0;
+                let mut ac_int: u8 = 0;
 
-            //pchl
+                if state.condition.z {z_int = 1;}
+                if state.condition.s {s_int = 1;}
+                if state.condition.p {p_int = 1;}
+                if state.condition.cy {cy_int = 1;}
+                if state.condition.ac {ac_int = 1;}
+
+                let psw: u8 = z_int | 
+                    s_int << 1 | 
+                    p_int << 2 | 
+                    cy_int << 3 | 
+                    ac_int << 4;
+
+                state.memory[state.sp as usize - 2] = psw;
+                state.sp = state.sp - 2;
+            }
             //return to
             0xe9 => {}
 
