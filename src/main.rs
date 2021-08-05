@@ -246,10 +246,10 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
                 state.l = state.a;
             }
             // MOV M,A
-            0x77 => {
+            /* 0x77 => {
                 let mem_offset: u16 = (state.h as u16) << 8 | state.l as u16;
                 state.memory[mem_offset as usize] = state.a;
-            }
+            } */
             // MOV A,D
             0x7a => {
                 state.a = state.d;
@@ -279,6 +279,28 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
             0x37 => {
                 state.condition.cy = true;
             }
+            // ANA A
+            0xa7 => {
+                let x: u8 = state.a & state.a;
+                state.condition.z = x == 0;
+                state.condition.s = 0x80 == (x & 0x80);
+                state.condition.set_parity_flag(x);
+                state.condition.cy = false;
+                state.condition.ac = false;
+                state.a = x;
+                state.pc += 1;
+            }
+            // XRA A
+            0xaf => {
+                let x: u8 = state.a ^ state.a;
+                state.condition.z = x == 0;
+                state.condition.s = 0x80 == (x & 0x80);
+                state.condition.set_parity_flag(x);
+                state.condition.cy = false;
+                state.condition.ac = false;
+                state.a = x;
+                state.pc += 1;
+            }
             // ANI
             0xe6 => {
                 let x: u8 = state.a & buf[cursor + 1];
@@ -287,8 +309,18 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
                 state.condition.set_parity_flag(x);
                 //Data book says ANI clears CY
                 state.condition.cy = false;
+                state.condition.ac = false;
                 state.a = x;
                 state.pc += 1;
+            }
+            // XCHG
+            0xeb => {
+                let save1: u8 = state.d;
+                let save2: u8 = state.e;
+                state.d = state.h;
+                state.e = state.l;
+                state.h = save1;
+                state.l = save2;
             }
             // RRC
             0x0f => {
