@@ -226,6 +226,47 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
             0x43 => {
                 state.b = state.e;
             }
+            // MOV D,M
+            0x56 => {
+                let mem_offset: u16 = (state.h as u16) << 8 | state.l as u16;
+                state.d = state.memory[mem_offset as usize];
+            }
+            // MOV E,M
+            0x5e => {
+                let mem_offset: u16 = (state.h as u16) << 8 | state.l as u16;
+                state.e = state.memory[mem_offset as usize];
+            }
+            // MOV H,M
+            0x66 => {
+                let mem_offset: u16 = (state.h as u16) << 8 | state.l as u16;
+                state.h = state.memory[mem_offset as usize];
+            }
+            // MOV L,A
+            0x6f => {
+                state.l = state.a;
+            }
+            // MOV M,A
+            0x77 => {
+                let mem_offset: u16 = (state.h as u16) << 8 | state.l as u16;
+                state.memory[mem_offset as usize] = state.a;
+            }
+            // MOV A,D
+            0x7a => {
+                state.a = state.d;
+            }
+            // MOV A,E
+            0x7b => {
+                state.a = state.e;
+            }
+            // MOV A,H
+            0x7c => {
+                state.a = state.h;
+            }
+            // MOV A,M
+            0x7e => {
+                let mem_offset: u16 = (state.h as u16) << 8 | state.l as u16;
+                state.a = state.memory[mem_offset as usize];
+            }
             // CMA (not) - doesn't affect flags
             0x2f => {
                 state.a = !state.a;
