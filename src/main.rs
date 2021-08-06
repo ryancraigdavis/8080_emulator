@@ -34,7 +34,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: & Vec<u8>) {
     let mut incr: bool = true;
     let mut printstate: bool = false;
     let mut count = 0;
-    let maxcount = 12;
+    let maxcount = 1554;
 
     while run_emu {
         incr = true;
@@ -687,6 +687,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: & Vec<u8>) {
                 state.pc = state.memory[state.sp as usize] as u16 | (state.memory[(state.sp + 1) as usize] as u16) << 8;
                 //state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
                 state.sp += 2;
+                incr = false;
             }
 
             //rz
