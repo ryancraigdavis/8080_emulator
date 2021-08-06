@@ -3,7 +3,9 @@ use std::io::prelude::*;
 mod condition_codes;
 mod disassembler;
 mod intel8080_state;
+mod sounds;
 use intel8080_state::StateIntel8080;
+use sounds::Invaderwavs;
 
 fn main() {
     let file_name = String::from("invaders");
@@ -16,7 +18,11 @@ fn main() {
     //disassembler::print_all(&buf);
 
     let mut intel_8080_state: StateIntel8080 = Default::default();
+    let mut sound_state: Invaderwavs = Default::default();
 
+    // Loads all the sounds needed for the game, plays the intro sound
+    sound_state.load_sounds();
+    sound_state.play_sound(8);
     intel_8080_state.init_mem(&buf);
 
     // Main emulation function
