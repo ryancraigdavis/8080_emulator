@@ -15,7 +15,7 @@ pub struct StateIntel8080 {
     pub pc: u16,
     pub condition: ConditionCodes,
     pub memory: Vec<u8>,
-    
+
     // External hardware shifts
     pub shift_0: u8,
     pub shift_1: u8,
@@ -34,7 +34,7 @@ pub struct StateIntel8080 {
 }
 
 impl StateIntel8080 {
-    pub fn init_mem(&mut self, buf: & Vec<u8>) {
+    pub fn init_mem(&mut self, buf: &Vec<u8>) {
         // intel 8080 has a maximum memory of 64KB
         self.memory = vec![0; 0xffff];
         let mut i = 0;

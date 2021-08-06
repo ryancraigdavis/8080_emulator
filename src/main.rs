@@ -17,24 +17,24 @@ fn main() {
 
     let mut intel_8080_state: StateIntel8080 = Default::default();
 
-    intel_8080_state.init_mem(& buf);
+    intel_8080_state.init_mem(&buf);
 
     // Main emulation function
-    run_emulation(&mut intel_8080_state, & buf);
+    run_emulation(&mut intel_8080_state, &buf);
 
     // Print out the current state (debugging)
     //println!("{:?}", intel_8080_state);
     //print_registers(&intel_8080_state);
 }
 
-fn run_emulation(state: &mut StateIntel8080, buf: & Vec<u8>) {
+fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
     // Loop control and current instruction location
     let mut run_emu: bool = true;
     let mut cursor: usize;
     let mut incr: bool = true;
     let mut printstate: bool = false;
     let mut count = 0;
-    let maxcount = 1547;
+    let maxcount = 37490;
 
     while run_emu {
         incr = true;
@@ -45,7 +45,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: & Vec<u8>) {
         print!("{:04x} ", cursor);
         print!("{:02x} ", buf[cursor]);
         disassembler::get_single(&buf, cursor);
-        count+= 1;
+        count += 1;
         match buf[cursor] {
             // NOP
             0x00 => {}
@@ -67,8 +67,8 @@ fn run_emulation(state: &mut StateIntel8080, buf: & Vec<u8>) {
             }
             // DCR C
             0x0d => {
-                state.d = state.d.wrapping_sub(1);
-                state.condition.set_dcr_flags(state.d as u16);
+                state.c = state.c.wrapping_sub(1);
+                state.condition.set_dcr_flags(state.c as u16);
             }
             // MVI B,byte
             0x06 => {
@@ -79,27 +79,39 @@ fn run_emulation(state: &mut StateIntel8080, buf: & Vec<u8>) {
             0x09 => {
                 let hl: u16 = ((state.h as u16) << 8) | state.l as u16;
                 let bc: u16 = ((state.b as u16) << 8) | state.c as u16;
-                let result: u16 = hl + bc;
-                state.h = (result & 0xff00) as u8;
-                state.l = (result & 0xff) as u8;
-                state.condition.cy = (result & 0xffff) > 0;
+                //let result: u16 = hl + bc;
+                //state.h = (result & 0xff00) as u8;
+                //state.l = (result & 0xff) as u8;
+                //state.condition.cy = (result & 0xffff) > 0;
+                let result = hl.overflowing_add(bc);
+                state.h = (result.0 >> 8) as u8;
+                state.l = result.0 as u8;
+                state.condition.cy = result.1;
             }
             // DAD D
             0x19 => {
                 let hl: u16 = ((state.h as u16) << 8) | state.l as u16;
                 let de: u16 = ((state.d as u16) << 8) | state.e as u16;
-                let result: u16 = hl + de;
-                state.h = (result & 0xff00) as u8;
-                state.l = (result & 0xff) as u8;
-                state.condition.cy = (result & 0xffff) != 0;
+                //let result: u16 = hl + de;
+                //state.h = (result & 0xff00) as u8;
+                //state.l = (result & 0xff) as u8;
+                //state.condition.cy = (result & 0xffff) != 0;
+                let result = hl.overflowing_add(de);
+                state.h = (result.0 >> 8) as u8;
+                state.l = result.0 as u8;
+                state.condition.cy = result.1;
             }
             // DAD H
             0x29 => {
                 let hl: u16 = ((state.h as u16) << 8) | state.l as u16;
-                let result: u16 = hl + hl;
-                state.h = (result & 0xff00) as u8;
-                state.l = (result & 0xff) as u8;
-                state.condition.cy = (result & 0xffff) != 0;
+                // let result = hl + hl;
+                //state.h = (result & 0xff00) as u8;
+                //state.l = (result & 0xff) as u8;
+                //state.condition.cy = (result & 0xffff) != 0;
+                let result = hl.overflowing_add(hl);
+                state.h = (result.0 >> 8) as u8;
+                state.l = result.0 as u8;
+                state.condition.cy = result.1;
             }
             // LXI D,word
             0x11 => {
@@ -151,7 +163,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: & Vec<u8>) {
             // LDA word
             0x3a => {
                 let mem_offset: u16 = (buf[cursor + 2] as u16) << 8 | buf[cursor + 1] as u16;
-                state.a = state.memory[mem_offset as usize]; 
+                state.a = state.memory[mem_offset as usize];
                 state.pc += 2;
             }
             // INR C
@@ -457,7 +469,6 @@ fn run_emulation(state: &mut StateIntel8080, buf: & Vec<u8>) {
             // CPI
             0xfe => {
                 //let x: u8 = state.a - buf[cursor + 1];
-
                 let x = state.a.overflowing_sub(buf[cursor + 1]);
                 state.condition.z = x.0 == 0;
                 state.condition.s = 0x80 == (x.0 & 0x80);
@@ -548,17 +559,17 @@ fn run_emulation(state: &mut StateIntel8080, buf: & Vec<u8>) {
                 match emu_port {
                     0 => {
                         state.a = 0xf;
-                    },
+                    }
                     1 => {
                         state.a = state.input_1;
-                    },                    
+                    }
                     2 => {
                         state.a = state.input_2;
-                    },
+                    }
                     3 => {
                         let visual = ((state.shift_1 as u16) << 8) | (state.shift_0 as u16);
                         state.a = (visual >> (8 - (state.shift_offset as u16))) as u8;
-                    },
+                    }
                     _ => {
                         state.a = 0;
                     }
@@ -573,18 +584,18 @@ fn run_emulation(state: &mut StateIntel8080, buf: & Vec<u8>) {
                 match emu_port {
                     2 => {
                         state.shift_offset = x & 0x7;
-                    },
+                    }
                     3 => {
                         state.output_3 = x;
-                    },                    
+                    }
                     4 => {
                         state.shift_0 = state.shift_1;
                         state.shift_1 = x;
-                    },
+                    }
                     5 => {
                         state.output_5 = x;
-                    },
-                    6 => {},
+                    }
+                    6 => {}
                     _ => {
                         run_emu = unimplemented(&buf[cursor]);
                     }
@@ -684,7 +695,8 @@ fn run_emulation(state: &mut StateIntel8080, buf: & Vec<u8>) {
 
             //ret
             0xc9 => {
-                state.pc = state.memory[state.sp as usize] as u16 | (state.memory[(state.sp + 1) as usize] as u16) << 8;
+                state.pc = state.memory[state.sp as usize] as u16
+                    | (state.memory[(state.sp + 1) as usize] as u16) << 8;
                 //state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
                 state.sp += 2;
                 incr = false;
@@ -825,17 +837,23 @@ fn run_emulation(state: &mut StateIntel8080, buf: & Vec<u8>) {
                 let mut cy_int: u8 = 0;
                 let mut ac_int: u8 = 0;
 
-                if state.condition.z {z_int = 1;}
-                if state.condition.s {s_int = 1;}
-                if state.condition.p {p_int = 1;}
-                if state.condition.cy {cy_int = 1;}
-                if state.condition.ac {ac_int = 1;}
+                if state.condition.z {
+                    z_int = 1;
+                }
+                if state.condition.s {
+                    s_int = 1;
+                }
+                if state.condition.p {
+                    p_int = 1;
+                }
+                if state.condition.cy {
+                    cy_int = 1;
+                }
+                if state.condition.ac {
+                    ac_int = 1;
+                }
 
-                let psw: u8 = z_int | 
-                    s_int << 1 | 
-                    p_int << 2 | 
-                    cy_int << 3 | 
-                    ac_int << 4;
+                let psw: u8 = z_int | s_int << 1 | p_int << 2 | cy_int << 3 | ac_int << 4;
 
                 state.memory[state.sp as usize - 2] = psw;
                 state.sp = state.sp - 2;
@@ -871,8 +889,7 @@ fn unimplemented(hexcode: &u8) -> bool {
 }
 
 #[allow(dead_code)]
-fn print_registers(state: & StateIntel8080)
-{
+fn print_registers(state: &StateIntel8080) {
     //print!("b = {:02x}, ", state.b);
     //print!("c = {:02x}, ", state.c);
     //print!("d = {:02x}, ", state.d);
