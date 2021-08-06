@@ -37,8 +37,8 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
     // Loop control and current instruction location
     let mut run_emu: bool = true;
     let mut cursor: usize;
-    let mut incr: bool = true;
-    let mut printstate: bool = false;
+    let mut incr: bool;
+    let mut printstate: bool;
     let mut count = 0;
     let maxcount = 44000;
 
@@ -46,10 +46,8 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
         incr = true;
         printstate = false;
         cursor = state.pc as usize;
-        if count > 42000 {
-            print_registers(&state);
-            println!("");
-        }
+        //print_registers(&state);
+        //println!("");
         print!("{:?} ", count);
         print!("{:04x} ", cursor);
         print!("{:02x} ", buf[cursor]);
@@ -252,9 +250,9 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
             // INR Mem
             0x34 => {
                 let mem_offset: u16 = ((state.h as u16) << 8) | (state.l as u16);
-                //let result: u16 = (state.memory[mem_offset as usize] as u16) + 1;
-                //state.condition.set_inr_flags(result);
-                //state.memory[mem_offset as usize] = (result as u8) & 0xff;
+                let result: u16 = (state.memory[mem_offset as usize] as u16).wrapping_add(1);
+                state.condition.set_inr_flags(result);
+                state.memory[mem_offset as usize] = result as u8;
             }
             // INR A
             0x3c => {
@@ -664,22 +662,16 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
             // ADC Mem
             0x8e => {
                 let mem_offset: u16 = ((state.h as u16) << 8) | (state.l as u16);
-                //let result: u16 = (state.a as u16) + (state.memory[mem_offset as usize] as u16) + (state.condition.cy as u16);
-                //state.condition.set_add_flags(result);
-                //state.a = (result as u8) & 0xff;
+                let result: u16 = (state.a as u16)
+                    + (state.memory[mem_offset as usize] as u16)
+                    + (state.condition.cy as u16);
+                state.condition.set_add_flags(result);
+                state.a = result as u8;
             }
             // ADC B
             0x8f => {
                 let result: u16 = (state.a as u16) + (state.a as u16) + (state.condition.cy as u16);
                 state.condition.set_add_flags(result);
-                state.a = (result as u8) & 0xff;
-            }
-            // SUB A
-            0x97 => {
-                // Subtracts A from A, equaling zero
-                let result: u16 = 0;
-                state.condition.set_sub_flags(result);
-                state.condition.cy = true;
                 state.a = (result as u8) & 0xff;
             }
             // ADI byte
@@ -772,15 +764,13 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                 state.pc += 1;
             }
 
-            //new starts here
             //EI
             0xfb => {
                 state.interrupts = true;
             }
 
             //DI
-            //return to, unfinished -- wrong opcode?
-            0xc6 => {
+            0xf3 => {
                 state.interrupts = false;
             }
 
@@ -934,7 +924,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
             0xde => {
                 let result = state
                     .a
-                    .overflowing_sub((buf[cursor + 1] + (state.condition.cy as u8)));
+                    .overflowing_sub(buf[cursor + 1] + (state.condition.cy as u8));
                 state.condition.set_sub_flags(result.0 as u16);
                 state.condition.cy = result.1;
 
