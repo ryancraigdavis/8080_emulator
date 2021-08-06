@@ -34,13 +34,16 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
     let mut incr: bool = true;
     let mut printstate: bool = false;
     let mut count = 0;
-    let maxcount = 45000;
+    let maxcount = 44000;
 
     while run_emu {
         incr = true;
         printstate = false;
         cursor = state.pc as usize;
-        print_registers(&state);
+        if count > 42000 {
+            print_registers(&state);
+            println!("");
+        }
         print!("{:?} ", count);
         print!("{:04x} ", cursor);
         print!("{:02x} ", buf[cursor]);
@@ -541,13 +544,13 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
             //new starts here
             //EI
             0xfb => {
-                state.condition.set_inr_flags(1);
+                state.interrupts = true;
             }
 
             //DI
             //return to, unfinished -- wrong opcode?
             0xc6 => {
-                state.condition.set_inr_flags(0);
+                state.interrupts = false;
             }
 
             //in -says to leave unimplemented and return to later
@@ -899,5 +902,6 @@ fn print_registers(state: &StateIntel8080) {
     print!("hl = {:02x}{:02x}, ", state.h, state.l);
     print!("pc = {:04x}, ", state.pc);
     print!("sp = {:04x}, ", state.sp);
+    print!("i = {:?}, ", state.interrupts);
     println!("{:?}", state.condition);
 }
