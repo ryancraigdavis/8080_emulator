@@ -34,7 +34,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
     let mut incr: bool = true;
     let mut printstate: bool = false;
     let mut count = 0;
-    let maxcount = 37407;
+    let maxcount = 37460;
 
     while run_emu {
         incr = true;
