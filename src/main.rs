@@ -74,24 +74,60 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                 state.b = state.b.wrapping_sub(1);
                 state.condition.set_dcr_flags(state.b as u16);
             }
+            // DCR D
+            0x15 => {
+                state.d = state.d.wrapping_sub(1);
+                state.condition.set_dcr_flags(state.d as u16);
+            }
             // DCR C
             0x0d => {
                 state.c = state.c.wrapping_sub(1);
                 state.condition.set_dcr_flags(state.c as u16);
+            }
+            // DCR A
+            0x3d => {
+                state.a = state.a.wrapping_sub(1);
+                state.condition.set_dcr_flags(state.a as u16);
+            }
+            // DCR E
+            0x1d => {
+                state.e = state.e.wrapping_sub(1);
+                state.condition.set_dcr_flags(state.e as u16);
+            }
+            // DCR H
+            0x25 => {
+                state.h = state.h.wrapping_sub(1);
+                state.condition.set_dcr_flags(state.h as u16);
+            }
+            // DCR L
+            0x2d => {
+                state.l = state.l.wrapping_sub(1);
+                state.condition.set_dcr_flags(state.l as u16);
             }
             // MVI B,byte
             0x06 => {
                 state.b = buf[cursor + 1];
                 state.pc += 1;
             }
+            // MVI D,byte
+            0x16 => {
+                state.d = buf[cursor + 1];
+                state.pc += 1;
+            }
+            // MVI E,byte
+            0x1e => {
+                state.e = buf[cursor + 1];
+                state.pc += 1;
+            }
+            // MVI L,byte
+            0x2e => {
+                state.l = buf[cursor + 1];
+                state.pc += 1;
+            }
             // DAD B
             0x09 => {
                 let hl: u16 = ((state.h as u16) << 8) | state.l as u16;
                 let bc: u16 = ((state.b as u16) << 8) | state.c as u16;
-                //let result: u16 = hl + bc;
-                //state.h = (result & 0xff00) as u8;
-                //state.l = (result & 0xff) as u8;
-                //state.condition.cy = (result & 0xffff) > 0;
                 let result = hl.overflowing_add(bc);
                 state.h = (result.0 >> 8) as u8;
                 state.l = result.0 as u8;
@@ -101,10 +137,6 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
             0x19 => {
                 let hl: u16 = ((state.h as u16) << 8) | state.l as u16;
                 let de: u16 = ((state.d as u16) << 8) | state.e as u16;
-                //let result: u16 = hl + de;
-                //state.h = (result & 0xff00) as u8;
-                //state.l = (result & 0xff) as u8;
-                //state.condition.cy = (result & 0xffff) != 0;
                 let result = hl.overflowing_add(de);
                 state.h = (result.0 >> 8) as u8;
                 state.l = result.0 as u8;
@@ -113,10 +145,6 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
             // DAD H
             0x29 => {
                 let hl: u16 = ((state.h as u16) << 8) | state.l as u16;
-                // let result = hl + hl;
-                //state.h = (result & 0xff00) as u8;
-                //state.l = (result & 0xff) as u8;
-                //state.condition.cy = (result & 0xffff) != 0;
                 let result = hl.overflowing_add(hl);
                 state.h = (result.0 >> 8) as u8;
                 state.l = result.0 as u8;
@@ -245,10 +273,118 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
             0x43 => {
                 state.b = state.e;
             }
+            // MOV B,A
+            0x47 => {
+                state.b = state.a;
+            }
+            // MOV C,B
+            0x48 => {
+                state.c = state.b;
+            }
+            // MOV C,D
+            0x4a => {
+                state.c = state.d;
+            }
+            // MOV C,E
+            0x4b => {
+                state.c = state.e;
+            }
+            // MOV C,H
+            0x4c => {
+                state.c = state.h;
+            }
+            // MOV D,C
+            0x51 => {
+                state.d = state.c;
+            }
+            // MOV D,E
+            0x53 => {
+                state.d = state.e;
+            }
+            // MOV D,H
+            0x54 => {
+                state.d = state.h;
+            }
+            // MOV D,L
+            0x55 => {
+                state.d = state.l;
+            }
+            // MOV E,D
+            0x5a => {
+                state.e = state.d;
+            }
+            // MOV E,H
+            0x5c => {
+                state.e = state.h;
+            }
+            // MOV E,L
+            0x5d => {
+                state.e = state.l;
+            }
+            // MOV H,E
+            0x63 => {
+                state.h = state.e;
+            }
+            // MOV H,L
+            0x65 => {
+                state.h = state.l;
+            }
+            // MOV L,B
+            0x68 => {
+                state.l = state.b;
+            }
+            // MOV L,C
+            0x69 => {
+                state.l = state.c;
+            }
+            // MOV L,H
+            0x6c => {
+                state.l = state.h;
+            }
+            // MOV A,L
+            0x7d => {
+                state.a = state.l;
+            }
+            // MOV C,A
+            0x4f => {
+                state.c = state.a;
+            }
+            // MOV E,C
+            0x59 => {
+                state.e = state.c;
+            }
+            // MOV L,E
+            0x6b => {
+                state.l = state.e;
+            }
+            // MOV B,L
+            0x45 => {
+                state.b = state.l;
+            }
+            // MOV D,B
+            0x50 => {
+                state.d = state.b;
+            }
+            // MOV H,B
+            0x60 => {
+                state.h = state.b;
+            }
+            // MOV H,D
+            0x62 => {
+                state.h = state.d;
+            }
+            // MOV H,A
+            0x67 => {
+                state.h = state.a;
+            }
             // MOV D,M
             0x56 => {
                 let mem_offset: u16 = (state.h as u16) << 8 | state.l as u16;
                 state.d = state.memory[mem_offset as usize];
+            }
+            // MOV D,A
+            0x57 => {
+                state.d = state.a;
             }
             // MOV E,M
             0x5e => {
@@ -263,6 +399,38 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
             // MOV L,A
             0x6f => {
                 state.l = state.a;
+            }
+            // MOV B,H
+            0x44 => {
+                state.b = state.h;
+            }
+            // MOV E,B
+            0x58 => {
+                state.e = state.b;
+            }
+            // MOV E,A
+            0x5f => {
+                state.e = state.a;
+            }
+            // MOV H,C
+            0x61 => {
+                state.h = state.c;
+            }
+            // MOV L,D
+            0x6a => {
+                state.l = state.d;
+            }
+            // MOV C,L
+            0x4d => {
+                state.c = state.l;
+            }
+            // MOV A,B
+            0x78 => {
+                state.a = state.b;
+            }
+            // MOV A,C
+            0x79 => {
+                state.a = state.c;
             }
             // MOV A,D
             0x7a => {
@@ -390,9 +558,9 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
             // ADD Mem
             0x86 => {
                 let mem_offset: u16 = ((state.h as u16) << 8) | (state.l as u16);
-                //let result: u16 = (state.a as u16) + (state.memory[mem_offset as usize] as u16);
-                //state.condition.set_add_flags(result);
-                //state.a = (result as u8) & 0xff;
+                let result: u16 = (state.a as u16) + (state.memory[mem_offset as usize] as u16);
+                state.condition.set_add_flags(result);
+                state.a = result as u8;
             }
             // ADD A
             0x87 => {
@@ -411,6 +579,63 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                 let result: u16 = (state.a as u16) + (state.c as u16) + (state.condition.cy as u16);
                 state.condition.set_add_flags(result);
                 state.a = (result as u8) & 0xff;
+            }
+            //SUB B
+            0x90 => {
+                let result = state.a.overflowing_sub(state.b);
+                state.condition.set_dcr_flags(result.0 as u16);
+                state.condition.cy = result.1;
+                state.a = result.0;
+            }
+            //SUB C
+            0x91 => {
+                let result = state.a.overflowing_sub(state.c);
+                state.condition.set_dcr_flags(result.0 as u16);
+                state.condition.cy = result.1;
+                state.a = result.0;
+            }
+            //SUB D
+            0x92 => {
+                let result = state.a.overflowing_sub(state.d);
+                state.condition.set_dcr_flags(result.0 as u16);
+                state.condition.cy = result.1;
+                state.a = result.0;
+            }
+            //SUB E
+            0x93 => {
+                let result = state.a.overflowing_sub(state.e);
+                state.condition.set_dcr_flags(result.0 as u16);
+                state.condition.cy = result.1;
+                state.a = result.0;
+            }
+            //SUB H
+            0x94 => {
+                let result = state.a.overflowing_sub(state.h);
+                state.condition.set_dcr_flags(result.0 as u16);
+                state.condition.cy = result.1;
+                state.a = result.0;
+            }
+            //SUB L
+            0x95 => {
+                let result = state.a.overflowing_sub(state.l);
+                state.condition.set_dcr_flags(result.0 as u16);
+                state.condition.cy = result.1;
+                state.a = result.0;
+            }
+            //SUB M
+            0x96 => {
+                let mem_offset: u16 = ((state.h as u16) << 8) | (state.l as u16);
+                let result = state.a.overflowing_sub(state.memory[mem_offset as usize]);
+                state.condition.set_dcr_flags(result.0 as u16);
+                state.condition.cy = result.1;
+                state.a = result.0;
+            }
+            //SUB A
+            0x97 => {
+                let result = state.a.overflowing_sub(state.a);
+                state.condition.set_dcr_flags(result.0 as u16);
+                state.condition.cy = result.1;
+                state.a = result.0;
             }
             // ADC D
             0x8a => {
@@ -521,11 +746,11 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
             }
             // CMP H
             0xbc => {
-                let x: u8 = state.a - state.h;
-                state.condition.z = x == 0;
-                state.condition.s = 0x80 == (x & 0x80);
-                state.condition.set_parity_flag(x);
-                state.condition.cy = state.a < state.h;
+                let x = state.a.overflowing_sub(state.h);
+                state.condition.z = x.0 == 0;
+                state.condition.s = 0x80 == (x.0 & 0x80);
+                state.condition.set_parity_flag(x.0);
+                state.condition.cy = !x.1;
                 state.pc += 1;
             }
             // CMP L
@@ -626,9 +851,10 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
             }
 
             //JZ
-            0xf2 => {
-                if !state.condition.z {
+            0xca => {
+                if state.condition.z {
                     state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                    incr = false;
                 } else {
                     state.pc += 2;
                 }
@@ -636,8 +862,9 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
 
             //JC
             0xda => {
-                if !state.condition.cy {
+                if state.condition.cy {
                     state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                    incr = false;
                 } else {
                     state.pc += 2;
                 }
@@ -645,8 +872,9 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
 
             //JNC
             0xd2 => {
-                if state.condition.cy {
+                if !state.condition.cy {
                     state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                    incr = false;
                 } else {
                     state.pc += 2;
                 }
@@ -656,6 +884,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
             0xe2 => {
                 if !state.condition.p {
                     state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                    incr = false;
                 } else {
                     state.pc += 2;
                 }
@@ -665,6 +894,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
             0xea => {
                 if state.condition.p {
                     state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                    incr = false;
                 } else {
                     state.pc += 2;
                 }
@@ -672,8 +902,10 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
 
             //jp (plus)
             0xf2 => {
-                if state.condition.s {
+                print_registers(&state);
+                if !state.condition.s {
                     state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                    incr = false;
                 } else {
                     state.pc += 2;
                 }
@@ -681,8 +913,161 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
 
             //jm (minus)
             0xfa => {
-                if !state.condition.s {
+                if state.condition.s {
                     state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                    incr = false;
+                } else {
+                    state.pc += 2;
+                }
+            }
+            // SUI D8
+            0xd6 => {
+                let result = state.a.overflowing_sub(buf[cursor + 1]);
+                state.condition.set_sub_flags(result.0 as u16);
+                state.condition.cy = result.1;
+
+                state.pc += 1;
+
+                state.a = result.0;
+            }
+            // SBI D8
+            0xde => {
+                let result = state
+                    .a
+                    .overflowing_sub((buf[cursor + 1] + (state.condition.cy as u8)));
+                state.condition.set_sub_flags(result.0 as u16);
+                state.condition.cy = result.1;
+
+                state.pc += 1;
+
+                state.a = result.0;
+            }
+            // ORI D8
+            0xf6 => {
+                let result = state.a | buf[cursor + 1];
+                state.condition.set_dcr_flags(result as u16);
+                state.condition.cy = false;
+                state.a = result;
+                state.pc += 1;
+            }
+
+            // XRI D8
+            0xee => {
+                let result = state.a ^ buf[cursor + 1];
+                state.condition.set_dcr_flags(result as u16);
+                state.condition.cy = false;
+                state.a = result;
+                state.pc += 1;
+            }
+
+            // CC ADR
+            0xdc => {
+                if state.condition.cy {
+                    let result = (state.pc as u16) + 3;
+                    state.memory[(state.sp - 1) as usize] = (result >> 8) as u8;
+                    state.memory[(state.sp - 2) as usize] = result as u8;
+                    state.sp -= 2;
+                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                    incr = false;
+                } else {
+                    state.pc += 2;
+                }
+            }
+
+            // CNC ADR
+            0xd4 => {
+                if !state.condition.cy {
+                    let result = (state.pc as u16) + 3;
+                    state.memory[(state.sp - 1) as usize] = (result >> 8) as u8;
+                    state.memory[(state.sp - 2) as usize] = result as u8;
+                    state.sp -= 2;
+                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                    incr = false;
+                } else {
+                    state.pc += 2;
+                }
+            }
+
+            // CPO ADR
+            0xe4 => {
+                if !state.condition.p {
+                    let result = (state.pc as u16) + 3;
+                    state.memory[(state.sp - 1) as usize] = (result >> 8) as u8;
+                    state.memory[(state.sp - 2) as usize] = result as u8;
+                    state.sp -= 2;
+                    state.pc = ((state.memory[cursor + 2] as u16) << 8)
+                        | (state.memory[cursor + 1] as u16);
+                    incr = false;
+                } else {
+                    state.pc += 2;
+                }
+            }
+
+            // CM ADR
+            0xfc => {
+                if state.condition.s {
+                    let result = (state.pc as u16) + 3;
+                    state.memory[(state.sp - 1) as usize] = (result >> 8) as u8;
+                    state.memory[(state.sp - 2) as usize] = result as u8;
+                    state.sp -= 2;
+                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                    incr = false;
+                } else {
+                    state.pc += 2;
+                }
+            }
+
+            // CNZ ADR
+            0xc4 => {
+                if !state.condition.z {
+                    let result = (state.pc as u16) + 3;
+                    state.memory[(state.sp - 1) as usize] = (result >> 8) as u8;
+                    state.memory[(state.sp - 2) as usize] = result as u8;
+                    state.sp -= 2;
+                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                    incr = false;
+                } else {
+                    state.pc += 2;
+                }
+            }
+
+            // CPE ADR
+            0xec => {
+                if state.condition.p {
+                    let result = (state.pc as u16) + 3;
+                    state.memory[(state.sp - 1) as usize] = (result >> 8) as u8;
+                    state.memory[(state.sp - 2) as usize] = result as u8;
+                    state.sp -= 2;
+                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                    incr = false;
+                } else {
+                    state.pc += 2;
+                }
+            }
+
+            // CP ADR
+            0xf4 => {
+                if !state.condition.s {
+                    let result = (state.pc as u16) + 3;
+                    state.memory[(state.sp - 1) as usize] = (result >> 8) as u8;
+                    state.memory[(state.sp - 2) as usize] = result as u8;
+                    state.sp -= 2;
+                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                    incr = false;
+                } else {
+                    state.pc += 2;
+                }
+            }
+
+            // CZ ADR
+            0xcc => {
+                if state.condition.z {
+                    let result = (state.pc as u16) + 3;
+                    state.memory[(state.sp - 1) as usize] = (result >> 8) as u8;
+                    state.memory[(state.sp - 2) as usize] = result as u8;
+                    state.sp -= 2;
+                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
+                    incr = false;
                 } else {
                     state.pc += 2;
                 }
@@ -711,80 +1096,80 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
             //rz
             0xc8 => {
                 if state.condition.z {
-                    state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
+                    state.pc = (state.memory[state.sp as usize] as u16)
+                        | (state.memory[(state.sp + 1) as usize] as u16) << 8;
                     state.sp += 2;
-                } else {
-                    state.pc += 2;
+                    incr = false;
                 }
             }
 
             //rnz
             0xc0 => {
                 if !state.condition.z {
-                    state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
+                    state.pc = (state.memory[state.sp as usize] as u16)
+                        | (state.memory[(state.sp + 1) as usize] as u16) << 8;
                     state.sp += 2;
-                } else {
-                    state.pc += 2;
+                    incr = false;
                 }
             }
 
             //rnc
             0xd0 => {
                 if !state.condition.cy {
-                    state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
+                    state.pc = (state.memory[state.sp as usize] as u16)
+                        | (state.memory[(state.sp + 1) as usize] as u16) << 8;
                     state.sp += 2;
-                } else {
-                    state.pc += 2;
+                    incr = false;
                 }
             }
 
             //rc
             0xd8 => {
                 if state.condition.cy {
-                    state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
+                    state.pc = (state.memory[state.sp as usize] as u16)
+                        | (state.memory[(state.sp + 1) as usize] as u16) << 8;
                     state.sp += 2;
-                } else {
-                    state.pc += 2;
+                    incr = false;
                 }
             }
 
             //rpo
             0xe0 => {
-                if state.condition.p {
-                    state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
+                if !state.condition.p {
+                    state.pc = (state.memory[state.sp as usize] as u16)
+                        | (state.memory[(state.sp + 1) as usize] as u16) << 8;
                     state.sp += 2;
-                } else {
-                    state.pc += 2;
+                    incr = false;
                 }
             }
 
             //rpe
             0xe8 => {
-                if !state.condition.p {
-                    state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
+                if state.condition.p {
+                    state.pc = (state.memory[state.sp as usize] as u16)
+                        | (state.memory[(state.sp + 1) as usize] as u16) << 8;
                     state.sp += 2;
-                } else {
-                    state.pc += 2;
+                    incr = false;
                 }
             }
 
             //rp
             0xf0 => {
-                if state.condition.s {
-                    state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
+                if !state.condition.s {
+                    state.pc = (state.memory[state.sp as usize] as u16)
+                        | (state.memory[(state.sp + 1) as usize] as u16) << 8;
                     state.sp += 2;
-                } else {
-                    state.pc += 2;
+                    incr = false;
                 }
             }
 
             //rm
             0xf8 => {
-                if !state.condition.s {
-                    state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
+                if state.condition.s {
+                    state.pc = (state.memory[state.sp as usize] as u16)
+                        | (state.memory[(state.sp + 1) as usize] as u16) << 8;
                     state.sp += 2;
-                } else {
-                    state.pc += 2;
+                    incr = false;
                 }
             }
             // POP B
