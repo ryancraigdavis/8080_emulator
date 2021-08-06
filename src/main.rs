@@ -34,7 +34,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
     let mut incr: bool = true;
     let mut printstate: bool = false;
     let mut count = 0;
-    let maxcount = 37490;
+    let maxcount = 45000;
 
     while run_emu {
         incr = true;
@@ -293,7 +293,6 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                 state.condition.cy = false;
                 state.condition.ac = false;
                 state.a = x;
-                state.pc += 1;
             }
             // XRA A
             0xaf => {
@@ -304,7 +303,6 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                 state.condition.cy = false;
                 state.condition.ac = false;
                 state.a = x;
-                state.pc += 1;
             }
             // ANI
             0xe6 => {
@@ -329,9 +327,10 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
             }
             // RRC
             0x0f => {
-                let x: u8 = state.a;
-                state.a = ((x & 1) << 7) | (x >> 1);
-                state.condition.cy = 1 == (x & 1);
+                //let x: u8 = state.a;
+                state.a = state.a.rotate_right(1);
+                //state.a = ((x & 1) << 7) | (x >> 1);
+                state.condition.cy = 1 == (state.a & 1);
             }
             // RAR
             0x1f => {
@@ -452,10 +451,8 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
             // ADI byte
             0xc6 => {
                 let result: u16 = (state.a as u16) + (buf[cursor + 1] as u16);
-
                 state.condition.set_add_flags(result);
-
-                state.a = (result as u8) & 0xff;
+                state.a = result as u8;
                 state.pc += 1;
             }
             // ACI byte
