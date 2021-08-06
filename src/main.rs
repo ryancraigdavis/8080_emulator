@@ -34,7 +34,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
     let mut incr: bool = true;
     let mut printstate: bool = false;
     let mut count = 0;
-    let maxcount = 37460;
+    let maxcount = 37490;
 
     while run_emu {
         incr = true;
@@ -67,8 +67,8 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
             }
             // DCR C
             0x0d => {
-                state.d = state.d.wrapping_sub(1);
-                state.condition.set_dcr_flags(state.d as u16);
+                state.c = state.c.wrapping_sub(1);
+                state.condition.set_dcr_flags(state.c as u16);
             }
             // MVI B,byte
             0x06 => {
