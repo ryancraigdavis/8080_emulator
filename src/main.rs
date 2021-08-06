@@ -563,6 +563,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: & Vec<u8>) {
                         state.a = 0;
                     }
                 }
+                state.pc += 1;
             }
 
             // OUT
@@ -588,6 +589,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: & Vec<u8>) {
                         run_emu = unimplemented(&buf[cursor]);
                     }
                 }
+                state.pc += 1;
             }
 
             //jmp
