@@ -879,9 +879,12 @@ fn print_registers(state: & StateIntel8080)
     print!("c = {:02x}, ", state.c);
     print!("d = {:02x}, ", state.d);
     print!("e = {:02x}, ", state.e);
-    print!("de = {:02x}{:02x}, ", state.d, state.e);
     print!("h = {:02x}, ", state.h);
     print!("l = {:02x}, ", state.l);
-    print!("hl = {:02x}{:02x} ", state.h, state.l);
+    print!("bc = {:02x}{:02x}, ", state.b, state.c);
+    print!("de = {:02x}{:02x}, ", state.d, state.e);
+    print!("hl = {:02x}{:02x}, ", state.h, state.l);
+    print!("pc = {:04x}, ", state.pc);
+    print!("sp = {:04x}, ", state.sp);
     println!("{:?}", state.condition);
 }
