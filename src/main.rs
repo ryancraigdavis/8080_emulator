@@ -543,10 +543,52 @@ fn run_emulation(state: &mut StateIntel8080, buf: & Vec<u8>) {
             }
 
             //in -says to leave unimplemented and return to later
-            0xdb => {}
+            0xdb => {
+                let emu_port = buf[cursor + 1];
+                match emu_port {
+                    0 => {
+                        state.a = 0xf;
+                    },
+                    1 => {
+                        state.a = state.input_1;
+                    },                    
+                    2 => {
+                        state.a = state.input_2;
+                    },
+                    3 => {
+                        let visual = ((state.shift_1 as u16) << 8) | (state.shift_0 as u16);
+                        state.a = (visual >> (8 - (state.shift_offset as u16))) as u8;
+                    },
+                    _ => {
+                        state.a = 0;
+                    }
+                }
+                state.pc += 1;
+            }
 
             // OUT
             0xd3 => {
+                let emu_port = buf[cursor + 1];
+                let x: u8 = state.a;
+                match emu_port {
+                    2 => {
+                        state.shift_offset = x & 0x7;
+                    },
+                    3 => {
+                        state.output_3 = x;
+                    },                    
+                    4 => {
+                        state.shift_0 = state.shift_1;
+                        state.shift_1 = x;
+                    },
+                    5 => {
+                        state.output_5 = x;
+                    },
+                    6 => {},
+                    _ => {
+                        run_emu = unimplemented(&buf[cursor]);
+                    }
+                }
                 state.pc += 1;
             }
 

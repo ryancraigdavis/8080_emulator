@@ -18,13 +18,13 @@ pub struct StateIntel8080 {
     pub shift_0: u8,
     pub shift_1: u8,
     pub shift_offset: u8,
-    pub input_0: u8,
     pub input_1: u8,
+    pub input_2: u8,
     //output ports for sounds
-    pub output_0: u8,
-    pub output_1: u8,
-    pub last_output_0: u8,
-    pub last_output_1: u8,
+    pub output_3: u8,
+    pub output_5: u8,
+    pub last_output_3: u8,
+    pub last_output_5: u8,
 }
 
 impl StateIntel8080 {
