@@ -17,16 +17,17 @@ fn main() {
 
     let mut intel_8080_state: StateIntel8080 = Default::default();
 
-    intel_8080_state.init_mem(&mut buf);
+    intel_8080_state.init_mem(& buf);
 
     // Main emulation function
-    run_emulation(&mut intel_8080_state, &mut buf);
+    run_emulation(&mut intel_8080_state, & buf);
 
     // Print out the current state (debugging)
-    println!("{:?}", intel_8080_state);
+    //println!("{:?}", intel_8080_state);
+    print_registers(&intel_8080_state);
 }
 
-fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
+fn run_emulation(state: &mut StateIntel8080, buf: & Vec<u8>) {
     // Loop control and current instruction location
     let mut run_emu: bool = true;
     let mut cursor: usize;
@@ -648,32 +649,6 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
                 state.sp += 2;
             }
 
-            //cz
-            0xcc => {
-                if state.condition.z {
-                    let result = (state.pc as u16) + 2;
-                    buf[cursor - 1] = ((result >> 8) as u8) & 0xff;
-                    buf[cursor - 2] = (result as u8) & 0xff;
-                    state.sp -= 2;
-                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
-                } else {
-                    state.pc += 2;
-                }
-            }
-
-            //cnz
-            0xc4 => {
-                if !state.condition.z {
-                    let result = (state.pc as u16) + 2;
-                    buf[cursor - 1] = ((result >> 8) as u8) & 0xff;
-                    buf[cursor - 2] = (result as u8) & 0xff;
-                    state.sp -= 2;
-                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
-                } else {
-                    state.pc += 2;
-                }
-            }
-
             //rz
             0xc8 => {
                 if state.condition.z {
@@ -689,32 +664,6 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
                 if !state.condition.z {
                     state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
                     state.sp += 2;
-                } else {
-                    state.pc += 2;
-                }
-            }
-
-            //cnc
-            0xd4 => {
-                if !state.condition.cy {
-                    let result = (state.pc as u16) + 2;
-                    buf[cursor - 1] = ((result >> 8) as u8) & 0xff;
-                    buf[cursor - 2] = (result as u8) & 0xff;
-                    state.sp -= 2;
-                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
-                } else {
-                    state.pc += 2;
-                }
-            }
-
-            //cc
-            0xdc => {
-                if state.condition.cy {
-                    let result = (state.pc as u16) + 2;
-                    buf[cursor - 1] = ((result >> 8) as u8) & 0xff;
-                    buf[cursor - 2] = (result as u8) & 0xff;
-                    state.sp -= 2;
-                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
                 } else {
                     state.pc += 2;
                 }
@@ -740,32 +689,6 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
                 }
             }
 
-            //cpo
-            0xe4 => {
-                if state.condition.p {
-                    let result = (state.pc as u16) + 2;
-                    buf[cursor - 1] = ((result >> 8) as u8) & 0xff;
-                    buf[cursor - 2] = (result as u8) & 0xff;
-                    state.sp -= 2;
-                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
-                } else {
-                    state.pc += 2;
-                }
-            }
-
-            //cpe
-            0xec => {
-                if !state.condition.p {
-                    let result = (state.pc as u16) + 2;
-                    buf[cursor - 1] = ((result >> 8) as u8) & 0xff;
-                    buf[cursor - 2] = (result as u8) & 0xff;
-                    state.sp -= 2;
-                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
-                } else {
-                    state.pc += 2;
-                }
-            }
-
             //rpo
             0xe0 => {
                 if state.condition.p {
@@ -781,32 +704,6 @@ fn run_emulation(state: &mut StateIntel8080, buf: &mut Vec<u8>) {
                 if !state.condition.p {
                     state.pc = (buf[cursor] as u16) | ((buf[cursor + 1] as u16) << 8);
                     state.sp += 2;
-                } else {
-                    state.pc += 2;
-                }
-            }
-
-            //cp
-            0xf4 => {
-                if state.condition.s {
-                    let result = (state.pc as u16) + 2;
-                    buf[cursor - 1] = ((result >> 8) as u8) & 0xff;
-                    buf[cursor - 2] = (result as u8) & 0xff;
-                    state.sp -= 2;
-                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
-                } else {
-                    state.pc += 2;
-                }
-            }
-
-            //cm
-            0xfc => {
-                if !state.condition.s {
-                    let result = (state.pc as u16) + 2;
-                    buf[cursor - 1] = ((result >> 8) as u8) & 0xff;
-                    buf[cursor - 2] = (result as u8) & 0xff;
-                    state.sp -= 2;
-                    state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
                 } else {
                     state.pc += 2;
                 }
@@ -932,6 +829,7 @@ fn unimplemented(hexcode: &u8) -> bool {
     false
 }
 
+#[allow(dead_code)]
 fn print_registers(state: & StateIntel8080)
 {
     print!("a = {:02x}, ", state.a);
