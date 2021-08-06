@@ -1,6 +1,7 @@
 use crate::condition_codes::ConditionCodes;
 
 // Created using http://www.emulator101.com/emulator-shell.html as a resource
+// Output/Input guide from https://github.com/dramikei/rust_8080
 #[derive(Debug, Default)]
 pub struct StateIntel8080 {
     pub a: u8,
@@ -14,13 +15,18 @@ pub struct StateIntel8080 {
     pub pc: u16,
     pub condition: ConditionCodes,
     pub memory: Vec<u8>,
-        //LSB of Space Invader's external shift hardware
+    
+    // External hardware shifts
     pub shift_0: u8,
     pub shift_1: u8,
     pub shift_offset: u8,
     pub input_1: u8,
     pub input_2: u8,
-    //output ports for sounds
+
+    // Interrupt Booleans
+    pub interrupts: bool,
+
+    // Output ports for sounds
     pub output_3: u8,
     pub output_5: u8,
     pub last_output_3: u8,
@@ -36,7 +42,6 @@ impl StateIntel8080 {
             self.memory[i] = buf[i];
             i += 1;
         }
-        // self.memory = buf.clone();
         // self.memory = vec![0; 0x4000];
     }
 }
