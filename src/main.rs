@@ -34,7 +34,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
     let mut incr: bool = true;
     let mut printstate: bool = false;
     let mut count = 0;
-    let maxcount = 37404;
+    let maxcount = 37407;
 
     while run_emu {
         incr = true;
@@ -84,7 +84,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                 //state.l = (result & 0xff) as u8;
                 //state.condition.cy = (result & 0xffff) > 0;
                 let result = hl.overflowing_add(bc);
-                state.h = (result.0 << 8) as u8;
+                state.h = (result.0 >> 8) as u8;
                 state.l = result.0 as u8;
                 state.condition.cy = result.1;
             }
@@ -97,7 +97,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                 //state.l = (result & 0xff) as u8;
                 //state.condition.cy = (result & 0xffff) != 0;
                 let result = hl.overflowing_add(de);
-                state.h = (result.0 << 8) as u8;
+                state.h = (result.0 >> 8) as u8;
                 state.l = result.0 as u8;
                 state.condition.cy = result.1;
             }
@@ -109,7 +109,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                 //state.l = (result & 0xff) as u8;
                 //state.condition.cy = (result & 0xffff) != 0;
                 let result = hl.overflowing_add(hl);
-                state.h = (result.0 << 8) as u8;
+                state.h = (result.0 >> 8) as u8;
                 state.l = result.0 as u8;
                 state.condition.cy = result.1;
             }
