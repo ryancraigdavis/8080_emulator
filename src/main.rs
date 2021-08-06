@@ -931,3 +931,17 @@ fn unimplemented(hexcode: &u8) -> bool {
     println!("Unimplemented instruction : {:02x}", hexcode);
     false
 }
+
+fn print_registers(state: & StateIntel8080)
+{
+    print!("a = {:02x}, ", state.a);
+    print!("b = {:02x}, ", state.b);
+    print!("c = {:02x}, ", state.c);
+    print!("d = {:02x}, ", state.d);
+    print!("e = {:02x}, ", state.e);
+    print!("de = {:02x}{:02x}, ", state.d, state.e);
+    print!("h = {:02x}, ", state.h);
+    print!("l = {:02x}, ", state.l);
+    print!("hl = {:02x}{:02x} ", state.h, state.l);
+    println!("{:?}", state.condition);
+}
