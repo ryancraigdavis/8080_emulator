@@ -24,7 +24,7 @@ fn main() {
 
     // Print out the current state (debugging)
     //println!("{:?}", intel_8080_state);
-    print_registers(&intel_8080_state);
+    //print_registers(&intel_8080_state);
 }
 
 fn run_emulation(state: &mut StateIntel8080, buf: & Vec<u8>) {
@@ -34,12 +34,13 @@ fn run_emulation(state: &mut StateIntel8080, buf: & Vec<u8>) {
     let mut incr: bool = true;
     let mut printstate: bool = false;
     let mut count = 0;
-    let maxcount = 10;
+    let maxcount = 12;
 
     while run_emu {
         incr = true;
         printstate = false;
         cursor = state.pc as usize;
+        print_registers(&state);
         print!("{:?} ", count);
         print!("{:04x} ", cursor);
         print!("{:02x} ", buf[cursor]);
@@ -134,7 +135,6 @@ fn run_emulation(state: &mut StateIntel8080, buf: & Vec<u8>) {
             // LDAX D
             0x1a => {
                 let mem_offset: u16 = (state.d as u16) << 8 | state.e as u16;
-                println!("{:?}", mem_offset);
                 state.a = state.memory[mem_offset as usize];
             }
             // MOV M,A
@@ -674,11 +674,9 @@ fn run_emulation(state: &mut StateIntel8080, buf: & Vec<u8>) {
             //call - doesn't implement negative
             //return to this
             0xcd => {
-                let result = (state.pc as u16) + 2;
-                //buf[cursor - 1] = ((result >> 8) as u8) & 0xff;
-                //buf[cursor - 2] = (result as u8) & 0xff;
-                state.memory[(state.sp - 1) as usize] = ((result >> 8) as u8) & 0xff;
-                state.memory[(state.sp - 2) as usize] = (result as u8) & 0xff;
+                let result = (state.pc as u16) + 3;
+                state.memory[(state.sp - 1) as usize] = (result >> 8) as u8;
+                state.memory[(state.sp - 2) as usize] = result as u8;
                 state.sp -= 2;
                 state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
                 incr = false;
@@ -874,13 +872,13 @@ fn unimplemented(hexcode: &u8) -> bool {
 #[allow(dead_code)]
 fn print_registers(state: & StateIntel8080)
 {
+    //print!("b = {:02x}, ", state.b);
+    //print!("c = {:02x}, ", state.c);
+    //print!("d = {:02x}, ", state.d);
+    //print!("e = {:02x}, ", state.e);
+    //print!("h = {:02x}, ", state.h);
+    //print!("l = {:02x}, ", state.l);
     print!("a = {:02x}, ", state.a);
-    print!("b = {:02x}, ", state.b);
-    print!("c = {:02x}, ", state.c);
-    print!("d = {:02x}, ", state.d);
-    print!("e = {:02x}, ", state.e);
-    print!("h = {:02x}, ", state.h);
-    print!("l = {:02x}, ", state.l);
     print!("bc = {:02x}{:02x}, ", state.b, state.c);
     print!("de = {:02x}{:02x}, ", state.d, state.e);
     print!("hl = {:02x}{:02x}, ", state.h, state.l);
