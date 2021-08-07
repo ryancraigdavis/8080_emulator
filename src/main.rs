@@ -662,9 +662,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
             // ADC Mem
             0x8e => {
                 let mem_offset: u16 = ((state.h as u16) << 8) | (state.l as u16);
-                let result: u16 = (state.a as u16)
-                    + (state.memory[mem_offset as usize] as u16)
-                    + (state.condition.cy as u16);
+                let result: u16 = (state.a as u16) + (state.memory[mem_offset as usize] as u16) + (state.condition.cy as u16);
                 state.condition.set_add_flags(result);
                 state.a = result as u8;
             }
@@ -1251,7 +1249,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                 run_emu = unimplemented(&buf[cursor]);
             }
         }
-        if incr {
+        if incr{
             state.pc += 1;
         }
         if printstate {
