@@ -54,7 +54,8 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
     let maxcount = 45000;
 
     // Utilizes example code from https://docs.rs/sdl2/0.34.5/sdl2/ and
-    // SDL2 examples provided by https://github.com/Rust-SDL2/rust-sdl2
+    // SDL2 examples provided by https://github.com/Rust-SDL2/rust-sdl2 and 
+    //https://nukep.github.io/rust-sdl2/sdl2/event/struct.EventPump.html
     let sdl_context = sdl2::init().expect("init failure");
     let video_subsystem = sdl_context.video().expect("video subsysteam failure");
 
@@ -73,17 +74,64 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
     canvas.set_draw_color(Color::RGB(0, 0, 0));
     canvas.clear();
 
+    let mut i = 0;
+    
+    //let sdl_context = sdl2::init().unwrap();
     let mut event_pump = sdl_context.event_pump().unwrap();
 
-    let mut i = 0;
+    
     'running: loop {
         for event in event_pump.poll_iter() {
             match event {
-                Event::Quit { .. }
-                | Event::KeyDown {
-                    keycode: Some(Keycode::Escape),
-                    ..
-                } => break 'running,
+                Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
+                    break 'running
+                },
+                //left
+                Event::KeyDown { keycode: Some(Keycode::Z), .. } => {
+                    state.input_1 |= 0x20;
+                },
+                //right
+                Event::KeyDown { keycode: Some(Keycode::X), .. } => {
+                    state.input_1 |= 0x40
+                },
+
+                //fire
+                Event::KeyDown { keycode: Some(Keycode::Period), .. } => {
+                    state.input_1 |= 0x10
+                },
+
+                //insert coin
+                Event::KeyDown { keycode: Some(Keycode::C), .. } => {
+                    state.input_1 |= 0x1
+                },
+
+                //1 player
+                Event::KeyDown { keycode: Some(Keycode::Num1), .. } => {
+                    state.input_1 |= 0x02
+                },
+                //left
+                Event::KeyUp { keycode: Some(Keycode::Z), .. } => {
+                    state.input_1 &= !0x20
+                },
+                //right
+                Event::KeyUp { keycode: Some(Keycode::X), .. } => {
+                    state.input_1 &= !0x40
+                },
+
+                //fire
+                Event::KeyUp { keycode: Some(Keycode::Period), .. } => {
+                    state.input_1 &= !0x10
+                },
+
+                //insert coin
+                Event::KeyUp { keycode: Some(Keycode::C), .. } => {
+                    state.input_1 &= !0x1
+                },
+
+                //1 player
+                Event::KeyUp { keycode: Some(Keycode::Num1), .. } => {
+                    state.input_1 &= !0x02
+                },
                 _ => {}
             }
         }
