@@ -44,4 +44,16 @@ impl StateIntel8080 {
         }
         // self.memory = vec![0; 0x4000];
     }
+
+    pub fn generate_interrupt(&mut self, interrupt_num: u8) {
+        if self.interrupts {
+            self.memory[self.sp as usize - 1] = (self.pc >> 8) as u8;
+            self.memory[self.sp as usize - 2] = self.pc as u8;
+            self.sp -= 2;
+
+            self.pc = (8 * interrupt_num) as u16;
+        }
+
+        self.interrupts = false;
+    }
 }
