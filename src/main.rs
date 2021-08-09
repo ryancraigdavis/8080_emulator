@@ -20,6 +20,7 @@ use std::time;
 // Main loop - Initializes video and kicks off emulation
 fn main() {
     // Read in (combined) invaders file
+    //let file_name = String::from("invaders");
     let file_name = String::from("invaders");
 
     // Load file into vector
@@ -140,7 +141,7 @@ fn main() {
 
         // Clear screen every loop
         canvas.set_draw_color(Color::RGB(0, 0, 0));
-        //canvas.clear();
+        canvas.clear();
 
         // Start with top half, run emulation
         top = true;
@@ -1294,44 +1295,44 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
             0xb8 => {
                 let x = state.a.overflowing_sub(state.b);
                 state.condition.set_dcr_flags(x.0 as u16);
-                state.condition.cy = !x.1;
+                state.condition.cy = x.1;
             }
             // CMP C
             0xb9 => {
                 let x = state.a.overflowing_sub(state.c);
                 state.condition.set_dcr_flags(x.0 as u16);
-                state.condition.cy = !x.1;
+                state.condition.cy = x.1;
             }
             // CMP D
             0xba => {
                 let x = state.a.overflowing_sub(state.d);
                 state.condition.set_dcr_flags(x.0 as u16);
-                state.condition.cy = !x.1;
+                state.condition.cy = x.1;
             }
             // CMP E
             0xbb => {
                 let x = state.a.overflowing_sub(state.e);
                 state.condition.set_dcr_flags(x.0 as u16);
-                state.condition.cy = !x.1;
+                state.condition.cy = x.1;
             }
             // CMP H
             0xbc => {
                 let x = state.a.overflowing_sub(state.h);
                 state.condition.set_dcr_flags(x.0 as u16);
-                state.condition.cy = !x.1;
+                state.condition.cy = x.1;
             }
             // CMP L
             0xbd => {
                 let x = state.a.overflowing_sub(state.l);
                 state.condition.set_dcr_flags(x.0 as u16);
-                state.condition.cy = !x.1;
+                state.condition.cy = x.1;
             }
             // CMP M
             0xbe => {
                 let mem_offset: u16 = (state.h as u16) << 8 | state.l as u16;
                 let x = state.a.overflowing_sub(state.memory[mem_offset as usize]);
                 state.condition.set_dcr_flags(x.0 as u16);
-                state.condition.cy = !x.1;
+                state.condition.cy = x.1;
             }
             // CMP A
             0xbf => {
@@ -1966,7 +1967,8 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
 
         // Increment pc unless we updated it manually
         if incr {
-            state.pc = state.pc.wrapping_add(1);
+            //state.pc = state.pc.wrapping_add(1);
+            state.pc += 1;
         }
     }
 }
@@ -2012,14 +2014,14 @@ fn get_bits(vram_byte: u8, bit_vector: &mut Vec<bool>) {
 // Draws to the screen
 // Utilizes example code from https://docs.rs/sdl2/0.34.5/sdl2/ and
 // SDL2 examples provided by https://github.com/Rust-SDL2/rust-sdl2
-fn draw_screen(canvas: &mut WindowCanvas, state: &StateIntel8080, top: bool) {
+fn draw_screen(canvas: &mut WindowCanvas, state: &StateIntel8080, _top: bool) {
     canvas.clear();
     let texture_creator = canvas.texture_creator();
 
-    let mut start_vram_index: usize = 0x2400;
-    let mut end_vram_index: usize = 0x4000;
+    let start_vram_index: usize = 0x2400;
+    let end_vram_index: usize = 0x4000;
 
-    let vram_offset = (end_vram_index - start_vram_index) / 2;
+    let _v_ram_offset = (end_vram_index - start_vram_index) / 2;
 
     //if top
     //{
@@ -2029,7 +2031,7 @@ fn draw_screen(canvas: &mut WindowCanvas, state: &StateIntel8080, top: bool) {
     //    start_vram_index += vram_offset;
     //}
 
-    let mut pixel_offset: usize = 0;
+    let pixel_offset: usize = 0;
 
     //if !top {
     //    pixel_offset = (224 * 256) / 2;
