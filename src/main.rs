@@ -189,7 +189,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
 
     // Run the loop for a single frame's time, 1/60th of a second
     // Divide by two because we're rendering half the frame
-    while cycle_count < (cycles_per_frame/2) {
+    while cycle_count < (cycles_per_frame / 2) {
         incr = true;
         cursor = state.pc as usize;
 
@@ -799,27 +799,24 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
 
                 //if (state.a & 0xf0) > 0b10010000 || state.condition.cy {
                 //    let result = state.a.overflowing_add(0x60);
-                 //   state.a = result.0;
-                  //  set_flags = true;
-                    
+                //   state.a = result.0;
+                //  set_flags = true;
+
                 //} else {
                 //    state.condition.cy = false;
                 //}
 
-                if (state.a & 0xf0) > 0b10010000 || state.condition.cy
-                {
+                if (state.a & 0xf0) > 0b10010000 || state.condition.cy {
                     let result = state.a.overflowing_add(0x60);
                     state.a = result.0;
                     //set_flags = true;
                     state.condition.cy = true;
                 }
 
-                
-                    state.condition.set_zero_flag(state.a as u16);
-                    state.condition.set_sign_flag(state.a as u16);
-                    state.condition.set_parity_flag(state.a);
-                    state.condition.set_ac_flag(state.a as u16);
-                
+                state.condition.set_zero_flag(state.a as u16);
+                state.condition.set_sign_flag(state.a as u16);
+                state.condition.set_parity_flag(state.a);
+                state.condition.set_ac_flag(state.a as u16);
             }
             // CMA (not) - doesn't affect flags
             0x2f => {
