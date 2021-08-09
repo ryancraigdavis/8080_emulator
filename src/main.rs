@@ -24,7 +24,7 @@ fn main() {
 
     // Load file into vector
     let mut buf = Vec::new();
-    let mut file_in = fs::File::open(file_name).unwrap();
+    let mut file_in = fs::File::open(file_name).expect("file failure");
     file_in.read_to_end(&mut buf).unwrap();
 
     // Initialize intel 8080 state
