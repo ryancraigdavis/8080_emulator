@@ -16,6 +16,7 @@ impl ConditionCodes {
         self.set_carry_flag_add(val);
         let lower = val as u8;
         self.set_parity_flag(lower);
+        self.set_ac_flag(val);
     }
 
     pub fn set_inr_flags(&mut self, val: u16) {
@@ -23,6 +24,7 @@ impl ConditionCodes {
         self.set_sign_flag(val);
         let lower = val as u8;
         self.set_parity_flag(lower);
+        self.set_ac_flag(val);
     }
 
     pub fn set_dcr_flags(&mut self, val: u16) {
@@ -30,6 +32,7 @@ impl ConditionCodes {
         self.set_sign_flag(val);
         let lower = val as u8;
         self.set_parity_flag(lower);
+        self.set_ac_flag(val);
     }
 
     pub fn set_sub_flags(&mut self, val: u16) {
@@ -38,46 +41,31 @@ impl ConditionCodes {
         self.set_carry_flag_sub(val);
         let lower = val as u8;
         self.set_parity_flag(lower);
+        self.set_ac_flag(val);
     }
 
     pub fn set_zero_flag(&mut self, val: u16) {
-        if val & 0xff == 0 {
-            self.z = true;
-        } else {
-            self.z = false;
-        }
+        self.z = val & 0xff == 0;
     }
 
     pub fn set_sign_flag(&mut self, val: u16) {
-        if val & 0x80 == 0x80 {
-            self.s = true;
-        } else {
-            self.s = false;
-        }
+        self.s = val & 0x80 == 0x80;
     }
 
     pub fn set_carry_flag_add(&mut self, val: u16) {
-        if val > 0xff {
-            self.cy = true;
-        } else {
-            self.cy = false;
-        }
+        self.cy = val > 0xff;
     }
 
     pub fn set_carry_flag_sub(&mut self, val: u16) {
-        if val < 0x100 {
-            self.cy = true;
-        } else {
-            self.cy = false;
-        }
+        self.cy = val < 0x100;
     }
 
     pub fn set_parity_flag(&mut self, val: u8) {
         let one_count: u32 = val.count_ones();
-        if one_count & 1 == 0 {
-            self.p = true;
-        } else {
-            self.p = false;
-        }
+        self.p = one_count & 1 == 0;
+    }
+
+    pub fn set_ac_flag(&mut self, val: u16) {
+        self.ac = (val as u8) > 0xf;
     }
 }

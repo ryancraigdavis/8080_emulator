@@ -72,6 +72,7 @@ fn main() {
                     keycode: Some(Keycode::Escape),
                     ..
                 } => break 'running,
+                // Key down
                 // Left
                 Event::KeyDown {
                     keycode: Some(Keycode::Z),
@@ -101,7 +102,9 @@ fn main() {
                 Event::KeyDown {
                     keycode: Some(Keycode::Num1),
                     ..
-                } => intel_8080_state.input_1 |= 0x02,
+                } => intel_8080_state.input_1 |= 0x04,
+
+                // Key up
                 // Left
                 Event::KeyUp {
                     keycode: Some(Keycode::Z),
@@ -129,14 +132,15 @@ fn main() {
                 Event::KeyUp {
                     keycode: Some(Keycode::Num1),
                     ..
-                } => intel_8080_state.input_1 &= !0x02,
+                } => intel_8080_state.input_1 &= !0x04,
+
                 _ => {}
             }
         }
 
         // Clear screen every loop
         canvas.set_draw_color(Color::RGB(0, 0, 0));
-        canvas.clear();
+        //canvas.clear();
 
         // Start with top half, run emulation
         top = true;
@@ -159,7 +163,7 @@ fn main() {
         }
 
         // Sleep for 1/60 of a second, for 60hz output
-        ::std::thread::sleep(time::Duration::new(0, 1_000_000_000u32 / 60));
+        ::std::thread::sleep(time::Duration::from_micros(16667));
     }
 
     print!("Executed finished");
@@ -171,7 +175,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
     let mut incr: bool;
 
     // The intel 8080 runs at 2 megahertz
-    let clock_rate = 2000000;
+    let clock_rate = 2_000_000;
     // We want it to execuate at 60hz refresh rate
     let cycles_per_frame = clock_rate / 60;
     let mut cycle_count: u32 = 0;
@@ -184,15 +188,15 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
     //println!("");
 
     // Run the loop for a single frame's time, 1/60th of a second
-    while cycle_count < cycles_per_frame {
+    // Divide by two because we're rendering half the frame
+    while cycle_count < (cycles_per_frame/2) {
         incr = true;
         cursor = state.pc as usize;
-        cycle_count += get_cycles(buf[cursor]) as u32;
 
         // Debug
-        print!("{:04x} ", cursor);
-        print!("{:02x} ", buf[cursor]);
-        disassembler::get_single(&buf, cursor);
+        //print!("{:04x} ", cursor);
+        //print!("{:02x} ", buf[cursor]);
+        //disassembler::get_single(&buf, cursor);
 
         // The buffer is read-only, use this for safer execution
         // Heavy use of https://altairclone.com/downloads/manuals/8080%20Programmers%20Manual.pdf
@@ -286,6 +290,11 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
             // LDAX B
             0x0a => {
                 let mem_offset: u16 = (state.b as u16) << 8 | state.c as u16;
+                state.a = state.memory[mem_offset as usize];
+            }
+            // LDAX D
+            0x20 => {
+                let mem_offset: u16 = (state.d as u16) << 8 | state.e as u16;
                 state.a = state.memory[mem_offset as usize];
             }
             // INR C
@@ -482,6 +491,10 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                 let mem_offset: u16 = (state.h as u16) << 8 | state.l as u16;
                 state.memory[mem_offset as usize] = state.l;
             }
+            // HLT
+            0x76 => {
+                break;
+            }
             // MOV M,A
             0x77 => {
                 let mem_offset: u16 = (state.h as u16) << 8 | state.l as u16;
@@ -575,6 +588,10 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
             0x48 => {
                 state.c = state.b;
             }
+            // MOV C,C
+            0x49 => {
+                state.c = state.c;
+            }
             // MOV C,D
             0x4a => {
                 state.c = state.d;
@@ -590,6 +607,10 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
             // MOV D,C
             0x51 => {
                 state.d = state.c;
+            }
+            // MOV D,D
+            0x52 => {
+                state.d = state.d;
             }
             // MOV D,E
             0x53 => {
@@ -761,32 +782,24 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
             // DAA
             // Not validated/finished
             0x27 => {
-                let mut result = state.a as u16;
-                let mut four_bits_low = state.a & 0x0f;
+                let four_bits_low = state.a & 0x0f;
 
-                if four_bits_low > 9 || state.condition.ac {
-                    four_bits_low += 6;
-                    state.condition.ac = (four_bits_low & 0x0f) < four_bits_low;
-                    result = result.overflowing_add(0b0110).0;
+                if four_bits_low > 0b1001 || state.condition.ac {
+                    state.a = state.a.wrapping_add(0x06);
+                    state.condition.ac = (four_bits_low + 0x06) > 0x10;
+                } else {
+                    state.condition.ac = false;
                 }
 
-                let mut four_bits_high = result >> 4 | 0xf0;
-                four_bits_high = four_bits_high.rotate_right(4);
-
-                if four_bits_high > 9 || state.condition.cy {
-                    four_bits_high += 6;
-                    if (four_bits_high & 0x0f) < four_bits_high {
-                        state.condition.cy = true;
-                    }
-
-                    result = result.overflowing_add(0b01100000).0;
+                if (state.a & 0xf0) > 0b10010000 || state.condition.cy {
+                    let result = state.a.overflowing_add(0x60);
+                    state.a = result.0;
+                    state.condition.set_zero_flag(state.a as u16);
+                    state.condition.set_sign_flag(state.a as u16);
+                    state.condition.set_parity_flag(state.a);
+                } else {
+                    state.condition.cy = false;
                 }
-
-                state.condition.set_zero_flag(result);
-                state.condition.set_sign_flag(result);
-                state.condition.set_parity_flag(result as u8);
-
-                state.a = result as u8;
             }
             // CMA (not) - doesn't affect flags
             0x2f => {
@@ -874,7 +887,8 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
             // ANA A
             0xa7 => {
                 let x: u8 = state.a & state.a;
-                state.condition.z = x == 0;
+                state.condition.set_zero_flag(x as u16);
+                //state.condition.z = x == 0;
                 state.condition.s = 0x80 == (x & 0x80);
                 state.condition.set_parity_flag(x);
                 state.condition.cy = false;
@@ -1256,6 +1270,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                 state.condition.set_parity_flag(x.0);
                 //state.condition.cy = state.a < buf[cursor + 1];
                 state.condition.cy = x.1;
+                state.condition.set_ac_flag(x.0 as u16);
                 state.pc += 1;
             }
             // CMP B
@@ -1339,7 +1354,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                         state.a = 0;
                     }
                 }
-                state.pc += 1;
+                state.pc = state.pc.wrapping_add(1);
             }
 
             // OUT
@@ -1368,7 +1383,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                         }
                     }
                 }
-                state.pc += 1;
+                state.pc = state.pc.wrapping_add(1);
             }
 
             //jmp
@@ -1560,7 +1575,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                     let result = (state.pc as u16) + 3;
                     state.memory[(state.sp - 1) as usize] = (result >> 8) as u8;
                     state.memory[(state.sp - 2) as usize] = result as u8;
-                    state.sp -= 2;
+                    state.sp = state.sp.wrapping_sub(2);
                     state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
                     incr = false;
                     cycle_count += cycle_offset;
@@ -1575,7 +1590,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                     let result = (state.pc as u16) + 3;
                     state.memory[(state.sp - 1) as usize] = (result >> 8) as u8;
                     state.memory[(state.sp - 2) as usize] = result as u8;
-                    state.sp -= 2;
+                    state.sp = state.sp.wrapping_sub(2);
                     state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
                     incr = false;
                     cycle_count += cycle_offset;
@@ -1590,7 +1605,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                     let result = (state.pc as u16) + 3;
                     state.memory[(state.sp - 1) as usize] = (result >> 8) as u8;
                     state.memory[(state.sp - 2) as usize] = result as u8;
-                    state.sp -= 2;
+                    state.sp = state.sp.wrapping_sub(2);
                     state.pc = ((state.memory[cursor + 2] as u16) << 8)
                         | (state.memory[cursor + 1] as u16);
                     incr = false;
@@ -1606,7 +1621,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                     let result = (state.pc as u16) + 3;
                     state.memory[(state.sp - 1) as usize] = (result >> 8) as u8;
                     state.memory[(state.sp - 2) as usize] = result as u8;
-                    state.sp -= 2;
+                    state.sp = state.sp.wrapping_sub(2);
                     state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
                     incr = false;
                     cycle_count += cycle_offset;
@@ -1621,7 +1636,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                     let result = (state.pc as u16) + 3;
                     state.memory[(state.sp - 1) as usize] = (result >> 8) as u8;
                     state.memory[(state.sp - 2) as usize] = result as u8;
-                    state.sp -= 2;
+                    state.sp = state.sp.wrapping_sub(2);
                     state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
                     incr = false;
                     cycle_count += cycle_offset;
@@ -1636,7 +1651,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                     let result = (state.pc as u16) + 3;
                     state.memory[(state.sp - 1) as usize] = (result >> 8) as u8;
                     state.memory[(state.sp - 2) as usize] = result as u8;
-                    state.sp -= 2;
+                    state.sp = state.sp.wrapping_sub(2);
                     state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
                     incr = false;
                     cycle_count += cycle_offset;
@@ -1651,7 +1666,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                     let result = (state.pc as u16) + 3;
                     state.memory[(state.sp - 1) as usize] = (result >> 8) as u8;
                     state.memory[(state.sp - 2) as usize] = result as u8;
-                    state.sp -= 2;
+                    state.sp = state.sp.wrapping_sub(2);
                     state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
                     incr = false;
                     cycle_count += cycle_offset;
@@ -1666,7 +1681,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                     let result = (state.pc as u16) + 3;
                     state.memory[(state.sp - 1) as usize] = (result >> 8) as u8;
                     state.memory[(state.sp - 2) as usize] = result as u8;
-                    state.sp -= 2;
+                    state.sp = state.sp.wrapping_sub(2);
                     state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
                     incr = false;
                     cycle_count += cycle_offset;
@@ -1676,10 +1691,10 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
             }
             // Call
             0xcd => {
-                let result = (state.pc as u16) + 3;
+                let result = (state.pc as u16).wrapping_add(3);
                 state.memory[(state.sp - 1) as usize] = (result >> 8) as u8;
                 state.memory[(state.sp - 2) as usize] = result as u8;
-                state.sp -= 2;
+                state.sp = state.sp.wrapping_sub(2);
                 state.pc = ((buf[cursor + 2] as u16) << 8) | (buf[cursor + 1] as u16);
                 incr = false;
             }
@@ -1852,7 +1867,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                 let result = (state.pc as u16) + 3;
                 state.memory[(state.sp - 1) as usize] = (result >> 8) as u8;
                 state.memory[(state.sp - 2) as usize] = result as u8;
-                state.sp -= 2;
+                state.sp = state.sp.wrapping_sub(2);
                 state.pc = 0x0000;
                 incr = false;
             }
@@ -1861,7 +1876,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                 let result = (state.pc as u16) + 3;
                 state.memory[(state.sp - 1) as usize] = (result >> 8) as u8;
                 state.memory[(state.sp - 2) as usize] = result as u8;
-                state.sp -= 2;
+                state.sp = state.sp.wrapping_sub(2);
                 state.pc = 0x0008;
                 incr = false;
             }
@@ -1870,7 +1885,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                 let result = (state.pc as u16) + 3;
                 state.memory[(state.sp - 1) as usize] = (result >> 8) as u8;
                 state.memory[(state.sp - 2) as usize] = result as u8;
-                state.sp -= 2;
+                state.sp = state.sp.wrapping_sub(2);
                 state.pc = 0x0010;
                 incr = false;
             }
@@ -1879,7 +1894,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                 let result = (state.pc as u16) + 3;
                 state.memory[(state.sp - 1) as usize] = (result >> 8) as u8;
                 state.memory[(state.sp - 2) as usize] = result as u8;
-                state.sp -= 2;
+                state.sp = state.sp.wrapping_sub(2);
                 state.pc = 0x0018;
                 incr = false;
             }
@@ -1888,7 +1903,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                 let result = (state.pc as u16) + 3;
                 state.memory[(state.sp - 1) as usize] = (result >> 8) as u8;
                 state.memory[(state.sp - 2) as usize] = result as u8;
-                state.sp -= 2;
+                state.sp = state.sp.wrapping_sub(2);
                 state.pc = 0x0020;
                 incr = false;
             }
@@ -1897,7 +1912,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                 let result = (state.pc as u16) + 3;
                 state.memory[(state.sp - 1) as usize] = (result >> 8) as u8;
                 state.memory[(state.sp - 2) as usize] = result as u8;
-                state.sp -= 2;
+                state.sp = state.sp.wrapping_sub(2);
                 state.pc = 0x0028;
                 incr = false;
             }
@@ -1906,7 +1921,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                 let result = (state.pc as u16) + 3;
                 state.memory[(state.sp - 1) as usize] = (result >> 8) as u8;
                 state.memory[(state.sp - 2) as usize] = result as u8;
-                state.sp -= 2;
+                state.sp = state.sp.wrapping_sub(2);
                 state.pc = 0x0030;
                 incr = false;
             }
@@ -1915,7 +1930,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                 let result = (state.pc as u16) + 3;
                 state.memory[(state.sp - 1) as usize] = (result >> 8) as u8;
                 state.memory[(state.sp - 2) as usize] = result as u8;
-                state.sp -= 2;
+                state.sp = state.sp.wrapping_sub(2);
                 state.pc = 0x0038;
                 incr = false;
             }
@@ -1928,6 +1943,9 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                 }
             }
         }
+
+        // Update the cycle count with the current cycles taken
+        cycle_count += get_cycles(buf[cursor]) as u32;
 
         // Increment pc unless we updated it manually
         if incr {
@@ -1977,29 +1995,27 @@ fn get_bits(vram_byte: u8, bit_vector: &mut Vec<bool>) {
 // Draws to the screen
 // Utilizes example code from https://docs.rs/sdl2/0.34.5/sdl2/ and
 // SDL2 examples provided by https://github.com/Rust-SDL2/rust-sdl2
-fn draw_screen(canvas: &mut WindowCanvas, state: &StateIntel8080, _top: bool) {
+fn draw_screen(canvas: &mut WindowCanvas, state: &StateIntel8080, top: bool) {
     canvas.clear();
     let texture_creator = canvas.texture_creator();
 
-    let start_vram_index: usize = 0x2400;
-    let end_vram_index: usize = 0x4000;
-    //let mut pixel_offset: usize = 0;
+    let mut start_vram_index: usize = 0x2400;
+    let mut end_vram_index: usize = 0x4000;
 
-    //if top {
-    //    pixel_offset = (224 * 256) / 2;
+    let vram_offset = (end_vram_index - start_vram_index) / 2;
+
+    //if top
+    //{
+    //    end_vram_index -= vram_offset;
+    //}
+    //else {
+    //    start_vram_index += vram_offset;
     //}
 
-    //let mid: usize = (end_vram_index - start_vram_index) / 2;
+    let mut pixel_offset: usize = 0;
 
-    // let start_render: usize;
-    //let end_render: usize;
-
-    //if top {
-    //    start_render = start_vram_index;
-    //    end_render = end_vram_index - mid;
-    //} else {
-    //    start_render = start_vram_index + mid;
-    //    end_render = end_vram_index;
+    //if !top {
+    //    pixel_offset = (224 * 256) / 2;
     //}
 
     let vram = &state.memory[start_vram_index..end_vram_index];
@@ -2018,9 +2034,9 @@ fn draw_screen(canvas: &mut WindowCanvas, state: &StateIntel8080, _top: bool) {
                 get_bits(*byte, &mut bit_vector);
                 for bit in &bit_vector {
                     if *bit {
-                        buf[x] = 255;
+                        buf[x + pixel_offset] = 255;
                     } else {
-                        buf[x] = 0;
+                        buf[x + pixel_offset] = 0;
                     }
                     x += 1;
                 }
