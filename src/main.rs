@@ -20,7 +20,6 @@ use std::time;
 // Main loop - Initializes video and kicks off emulation
 fn main() {
     // Read in (combined) invaders file
-    //let file_name = String::from("invaders");
     let file_name = String::from("invaders");
 
     // Load file into vector
@@ -1967,8 +1966,7 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
 
         // Increment pc unless we updated it manually
         if incr {
-            //state.pc = state.pc.wrapping_add(1);
-            state.pc += 1;
+            state.pc = state.pc.wrapping_add(1);
         }
     }
 }
