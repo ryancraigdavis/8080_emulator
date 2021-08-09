@@ -783,23 +783,43 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
             // Not validated/finished
             0x27 => {
                 let four_bits_low = state.a & 0x0f;
+                //let mut set_flags = false;
 
-                if four_bits_low > 0b1001 || state.condition.ac {
+                //if four_bits_low > 0b1001 || state.condition.ac {
+                //    state.a = state.a.wrapping_add(0x06);
+                //    state.condition.ac = (four_bits_low + 0x06) > 0x10;
+                //    set_flags = true;
+                //} else {
+                //    state.condition.ac = false;
+                //}
+
+                if four_bits_low > 0b1001 {
                     state.a = state.a.wrapping_add(0x06);
-                    state.condition.ac = (four_bits_low + 0x06) > 0x10;
-                } else {
-                    state.condition.ac = false;
                 }
 
-                if (state.a & 0xf0) > 0b10010000 || state.condition.cy {
+                //if (state.a & 0xf0) > 0b10010000 || state.condition.cy {
+                //    let result = state.a.overflowing_add(0x60);
+                 //   state.a = result.0;
+                  //  set_flags = true;
+                    
+                //} else {
+                //    state.condition.cy = false;
+                //}
+
+                if (state.a & 0xf0) > 0b10010000 || state.condition.cy
+                {
                     let result = state.a.overflowing_add(0x60);
                     state.a = result.0;
+                    //set_flags = true;
+                    state.condition.cy = true;
+                }
+
+                
                     state.condition.set_zero_flag(state.a as u16);
                     state.condition.set_sign_flag(state.a as u16);
                     state.condition.set_parity_flag(state.a);
-                } else {
-                    state.condition.cy = false;
-                }
+                    state.condition.set_ac_flag(state.a as u16);
+                
             }
             // CMA (not) - doesn't affect flags
             0x2f => {
