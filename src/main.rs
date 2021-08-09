@@ -35,7 +35,6 @@ fn main() {
 
     // Loads all the sounds needed for the game, plays the intro sound
     sound_state.load_sounds();
-    sound_state.play_sound(8);
 
     // Load main memory
     intel_8080_state.init_mem(&buf);
@@ -144,7 +143,7 @@ fn main() {
 
         // Start with top half, run emulation
         top = true;
-        run_emulation(&mut intel_8080_state, &buf);
+        run_emulation(&mut intel_8080_state, &buf, &sound_state);
 
         // If interrupts, then draw the screen (top half)
         if intel_8080_state.interrupts {
@@ -154,7 +153,7 @@ fn main() {
 
         // Move onto bottom half
         top = false;
-        run_emulation(&mut intel_8080_state, &buf);
+        run_emulation(&mut intel_8080_state, &buf, &sound_state);
 
         // If interrupts, then draw the bottom half
         if intel_8080_state.interrupts {
@@ -170,7 +169,7 @@ fn main() {
 }
 
 // Emulation loop, handles intel 8080 instructions
-fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
+fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>, sound_state: &Invaderwavs) {
     // Loop control and current instruction location
     let mut incr: bool;
 
@@ -1383,14 +1382,20 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
                         state.shift_offset = x & 0x7;
                     }
                     3 => {
-                        state.output_3 = x;
+                        let sound_bool = sound_state.queued_event(x, 1, state.output_3);
+                        if sound_bool {
+                            state.output_3 = x;
+                        }
                     }
                     4 => {
                         state.shift_0 = state.shift_1;
                         state.shift_1 = x;
                     }
                     5 => {
-                        state.output_5 = x;
+                        let sound_bool = sound_state.queued_event(x, 2, state.output_5);
+                        if sound_bool {
+                            state.output_5 = x;
+                        }
                     }
                     6 => {}
                     _ => {
