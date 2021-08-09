@@ -2051,23 +2051,20 @@ fn draw_screen(canvas: &mut WindowCanvas, state: &StateIntel8080, _top: bool) {
                 get_bits(*byte, &mut bit_vector);
                 for bit in &bit_vector {
                     if *bit {
-                        // Colors Based on visual approximations 
+                        // Colors Based on visual approximations
                         // from real gameplay - https://www.youtube.com/watch?v=MU4psw3ccUI
-                        if (x % 256 ) > 15 && (x % 256) < 80 {
+                        if (x % 256) > 15 && (x % 256) < 80 {
                             // 8 bit color is 0brrrgggbb
                             buf[x + pixel_offset] = 0b00011100;
-                        } 
-                        else if (x % 256 ) > 200 && (x % 256) < 222 {
+                        } else if (x % 256) > 200 && (x % 256) < 222 {
                             buf[x + pixel_offset] = 0b11100000;
-                        }
-                        else {
+                        } else {
                             buf[x + pixel_offset] = 255;
                         }
                     } else {
                         buf[x + pixel_offset] = 0;
                     }
                     x += 1;
-
                 }
             }
         })
