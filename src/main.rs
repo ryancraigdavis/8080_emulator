@@ -24,7 +24,7 @@ fn main() {
 
     // Load file into vector
     let mut buf = Vec::new();
-    let mut file_in = fs::File::open(file_name).unwrap();
+    let mut file_in = fs::File::open(file_name).expect("file failure");
     file_in.read_to_end(&mut buf).unwrap();
 
     // Initialize intel 8080 state
@@ -140,7 +140,7 @@ fn main() {
 
         // Clear screen every loop
         canvas.set_draw_color(Color::RGB(0, 0, 0));
-        //canvas.clear();
+        canvas.clear();
 
         // Start with top half, run emulation
         top = true;
@@ -1294,44 +1294,44 @@ fn run_emulation(state: &mut StateIntel8080, buf: &Vec<u8>) {
             0xb8 => {
                 let x = state.a.overflowing_sub(state.b);
                 state.condition.set_dcr_flags(x.0 as u16);
-                state.condition.cy = !x.1;
+                state.condition.cy = x.1;
             }
             // CMP C
             0xb9 => {
                 let x = state.a.overflowing_sub(state.c);
                 state.condition.set_dcr_flags(x.0 as u16);
-                state.condition.cy = !x.1;
+                state.condition.cy = x.1;
             }
             // CMP D
             0xba => {
                 let x = state.a.overflowing_sub(state.d);
                 state.condition.set_dcr_flags(x.0 as u16);
-                state.condition.cy = !x.1;
+                state.condition.cy = x.1;
             }
             // CMP E
             0xbb => {
                 let x = state.a.overflowing_sub(state.e);
                 state.condition.set_dcr_flags(x.0 as u16);
-                state.condition.cy = !x.1;
+                state.condition.cy = x.1;
             }
             // CMP H
             0xbc => {
                 let x = state.a.overflowing_sub(state.h);
                 state.condition.set_dcr_flags(x.0 as u16);
-                state.condition.cy = !x.1;
+                state.condition.cy = x.1;
             }
             // CMP L
             0xbd => {
                 let x = state.a.overflowing_sub(state.l);
                 state.condition.set_dcr_flags(x.0 as u16);
-                state.condition.cy = !x.1;
+                state.condition.cy = x.1;
             }
             // CMP M
             0xbe => {
                 let mem_offset: u16 = (state.h as u16) << 8 | state.l as u16;
                 let x = state.a.overflowing_sub(state.memory[mem_offset as usize]);
                 state.condition.set_dcr_flags(x.0 as u16);
-                state.condition.cy = !x.1;
+                state.condition.cy = x.1;
             }
             // CMP A
             0xbf => {
@@ -2012,14 +2012,14 @@ fn get_bits(vram_byte: u8, bit_vector: &mut Vec<bool>) {
 // Draws to the screen
 // Utilizes example code from https://docs.rs/sdl2/0.34.5/sdl2/ and
 // SDL2 examples provided by https://github.com/Rust-SDL2/rust-sdl2
-fn draw_screen(canvas: &mut WindowCanvas, state: &StateIntel8080, top: bool) {
+fn draw_screen(canvas: &mut WindowCanvas, state: &StateIntel8080, _top: bool) {
     canvas.clear();
     let texture_creator = canvas.texture_creator();
 
-    let mut start_vram_index: usize = 0x2400;
-    let mut end_vram_index: usize = 0x4000;
+    let start_vram_index: usize = 0x2400;
+    let end_vram_index: usize = 0x4000;
 
-    let vram_offset = (end_vram_index - start_vram_index) / 2;
+    let _v_ram_offset = (end_vram_index - start_vram_index) / 2;
 
     //if top
     //{
@@ -2029,7 +2029,7 @@ fn draw_screen(canvas: &mut WindowCanvas, state: &StateIntel8080, top: bool) {
     //    start_vram_index += vram_offset;
     //}
 
-    let mut pixel_offset: usize = 0;
+    let pixel_offset: usize = 0;
 
     //if !top {
     //    pixel_offset = (224 * 256) / 2;
@@ -2051,7 +2051,16 @@ fn draw_screen(canvas: &mut WindowCanvas, state: &StateIntel8080, top: bool) {
                 get_bits(*byte, &mut bit_vector);
                 for bit in &bit_vector {
                     if *bit {
-                        buf[x + pixel_offset] = 255;
+                        // Colors Based on visual approximations
+                        // from real gameplay - https://www.youtube.com/watch?v=MU4psw3ccUI
+                        if (x % 256) > 15 && (x % 256) < 80 {
+                            // 8 bit color is 0brrrgggbb
+                            buf[x + pixel_offset] = 0b00011100;
+                        } else if (x % 256) > 200 && (x % 256) < 222 {
+                            buf[x + pixel_offset] = 0b11100000;
+                        } else {
+                            buf[x + pixel_offset] = 255;
+                        }
                     } else {
                         buf[x + pixel_offset] = 0;
                     }
