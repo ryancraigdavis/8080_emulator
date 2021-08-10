@@ -35,6 +35,7 @@ fn main() {
 
     // Loads all the sounds needed for the game, plays the intro sound
     sound_state.load_sounds();
+    sound_state.play_sound(8);
 
     // Load main memory
     intel_8080_state.init_mem(&buf);
